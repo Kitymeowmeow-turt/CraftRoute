@@ -1,2 +1,2 @@
 # CraftRoute
-Addon for turtlish servers
+Addon for octowow
