@@ -9,14 +9,100 @@ It covers all 9 professions (Alchemy, Blacksmithing, Cooking, Enchanting, Engine
 
 ## Use
 
-<img width="1405" height="767" alt="craftpathJC" src="https://github.com/user-attachments/assets/8629a0d4-2b80-471b-abec-f7f22d364d73" />
+I'd like to show you in game screenshots but I'm wary of blozzard, so I'm going to describe using it and provide a copy and pasted report.
 
 Using CraftRoutes for non-gnomes is simple, you go to the auction house, scan, hit the create route button. The **copy and pastable report** (Ctrl+A Ctrl+C) you receive has a cost breakdown with comparison to the total cost breakdown of the static guide website many use, wow-professions. Below is a picture of what you would see in game when you generate a report.
 
-<img width="887" height="635" alt="Screenshot 2026-08-04 094928" src="https://github.com/user-attachments/assets/c76145c0-5d0b-4029-ba43-03d4e463736d" />
-<img width="887" height="592" alt="Screenshot 2026-08-04 094956" src="https://github.com/user-attachments/assets/d71a6547-85fa-450e-8ee1-2aff3ef5f9f5" />
-<img width="887" height="666" alt="Screenshot 2026-08-04 095027" src="https://github.com/user-attachments/assets/d91598ae-5078-4067-8c2c-47e53df8babe" />
-<img width="887" height="467" alt="Screenshot 2026-08-04 095050" src="https://github.com/user-attachments/assets/f55d4903-bdcc-494a-a8e4-1f9f22f149ee" />
+>Alchemy -- cheapest 1 to 300 route  [CraftRoute (optimized)]
+>
+>Guide comparisons (each priced with real AH data, buying lowest first):
+>  CraftRoute (optimized): 21g 90s 59c  <- cheapest, shown below
+>  Wow-Professions.com: 50g 52s 70c
+>
+>Total AH cost (actual scanned listings, cheapest first): 21g 90s 59c
+>  includes one-time recipe/training costs: 6g 20s 44c
+>  Returned money after selling crafts back to vendor: -5g 45s 31c
+>Total cost after vendoring: 16g 45s 28c
+>  Note: Trainer training costs above are rough guesses at the threshholds 1-100, 100-200, and 200-300.
+>
+>-- Step-by-step --
+>
+>1-50 Shopping list
+>  49x Empty Vial  (0g 1s 96c -- 0 from AH, 49 from vendor)
+>  41x Peacebloom  (0g 7s 22c)
+>  57x Silverleaf  (0g 12s 27c)
+>
+>[1-50]
+>  [1-9] Elixir of Minor Defense  x8  (0g 4s 27c) +0g 2s 0c~ Trainer
+>  [9-50] Minor Healing Potion  x41  (0g 21s 57c) +0g 2s 0c~ Trainer
+>
+>50-125 Shopping list
+>  21x Bruiseweed  (0g 9s 66c)
+>  78x Earthroot  (0g 21s 76c)
+>  91x Empty Vial  (0g 3s 64c -- 0 from AH, 91 from vendor)
+>  20x Mageroyal  (0g 3s 87c)
+>  50x Peacebloom  (0g 13s 11c)
+>  31x Silverleaf  (0g 9s 17c)
+>  21x Swiftthistle  (0g 30s 59c)
+>
+>[50-125]
+>  [50-60] Minor Healing Potion  x11  (0g 5s 26c) Trainer
+>  [60-77] Minor Mana Potion  x20  (0g 12s 1c) +0g 2s 0c~ Trainer
+>  [77-104] Elixir of Minor Fortitude  x39  (0g 35s 75c) +0g 2s 0c~ Trainer
+>  [104-125] Holy Protection Potion  x21  (0g 45s 24c) +0g 5s 0c~ Trainer
+>
+>125-200 Shopping list
+>  30x Bruiseweed  (0g 13s 80c)
+>  37x Earthroot  (0g 10s 80c)
+>  27x Empty Vial  (0g 1s 8c -- 0 from AH, 27 from vendor)
+>  26x Firefin Snapper  (0g 26s 0c)
+>  37x Kingsblood  (0g 41s 98c)
+>  53x Leaded Vial  (0g 21s 20c -- 0 from AH, 53 from vendor)
+>  16x Liferoot  (0g 23s 19c)
+>  14x Swiftthistle  (0g 20s 54c)
+>
+>[125-200]
+>  [125-138] Holy Protection Potion  x14  (0g 28s 0c) Trainer
+>  [138-151] Fire Oil  x13  (0g 31s 52c) +0g 5s 0c~ Trainer
+>  [151-186] Elixir of Ogre's Strength  x37  (0g 71s 91c) +0g 4s 97c Recipe
+>  [186-200] Mighty Troll's Blood Potion  x16  (0g 39s 65c) +0g 5s 0c~ Trainer
+>
+>200-300 Shopping list
+>  64x Arthas' Tears  (1g 70s 24c)
+>  20x Bruiseweed  (0g 9s 38c)
+>  87x Crystal Vial  (4g 35s 0c -- 0 from AH, 87 from vendor)
+>  13x Dreamfoil  (1g 66s 44c)
+>  10x Elemental Water  (0g 46s 78c)
+>  46x Fadeleaf  (0g 61s 6c)
+>  9x Goldthorn  (0g 15s 96c)
+>  10x Icecap  (0g 54s 87c)
+>  37x Khadgar's Whisker  (0g 58s 86c)
+>  66x Leaded Vial  (0g 26s 40c -- 0 from AH, 66 from vendor)
+>  20x Liferoot  (0g 29s 0c)
+>  26x Plaguebloom  (2g 24s 32c)
+>
+>[200-300]
+>  [200-217] Mighty Troll's Blood Potion  x20  (0g 48s 15c) Trainer
+>  [217-240] Elixir of Detect Lesser Invisibility  x37  (1g 31s 77c) +0g 11s 48c Recipe
+>  [240-244] Catseye Elixir  x9  (0g 57s 36c) +0g 27s 0c~ Trainer
+>  [244-277] Elixir of Detect Undead  x64  (5g 12s 85c) +0g 27s 0c~ Trainer
+>  [277-290] Mageblood Potion  x13  (4g 82s 76c) +0g 27s 0c~ Trainer
+>  [290-300] Greater Frost Protection Potion  x10  (6g 51s 64c) +4g 99s 99c Recipe
+>
+>-- Sell off leftover crafted items --
+>  9x catseye elixir  -> sell to vendor  (0g 1s 50c each, 0g 13s 50c total)
+>  37x elixir of detect lesser invisibility  -> sell to vendor  (0g 1s 50c each, 0g 55s 50c total)
+>  64x elixir of detect undead  -> sell to vendor  (0g 3s 0c each, 1g 92s 0c total)
+>  8x elixir of minor defense  -> sell to vendor  (0g 0s 5c each, 0g 0s 40c total)
+>  39x elixir of minor fortitude  -> sell to vendor  (0g 0s 15c each, 0g 5s 85c total)
+>  37x elixir of ogre's strength  -> sell to vendor  (0g 0s 20c each, 0g 7s 40c total)
+>  13x fire oil  -> sell to vendor  (0g 0s 12c each, 0g 1s 56c total)
+>  10x greater frost protection potion  -> sell to vendor  (0g 7s 50c each, 0g 75s 0c total)
+>  35x holy protection potion  -> sell to vendor  (0g 0s 62c each, 0g 21s 70c total)
+>  13x mageblood potion  -> sell to vendor  (0g 10s 0c each, 1g 30s 0c total)
+>  36x mighty troll's blood potion  -> sell to vendor  (0g 1s 5c each, 0g 37s 80c total)
+>  52x minor healing potion  -> sell to vendor  (0g 0s 5c each, 0g 2s 60c total)
+>  20x minor mana potion  -> sell to vendor  (0g 0s 10c each, 0g 2s 0c total)
 
 ## The Algorithm 
 
