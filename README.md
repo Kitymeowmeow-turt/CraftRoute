@@ -11,7 +11,7 @@ It covers all 9 professions (Alchemy, Blacksmithing, Cooking, Enchanting, Engine
 
 I'd like to show you in game screenshots, but I'm wary of blozzard targeting me over showing any game assets whatsoever, so I'm going to describe using it and provide a copy and pasted report.
 
-Using CraftRoutes for non-gnomes is simple, you go to the auction house, scan, hit the create route button. The **copy and pastable report** (Ctrl+A Ctrl+C) you receive has a cost breakdown with comparison to the total cost breakdown of the static guide website many use, wow-professions. Below is a picture of what you would see in game when you generate a report.
+Using CraftRoutes for non-gnomes is simple, you go to the auction house, scan, hit the create route button. The **copy and pastable report** (Ctrl+A Ctrl+C) you receive has a cost breakdown with comparison to the total cost breakdown of the static guide website many use, wow-professions. Below is a picture of what you would see in game when you generate a report without selling to auctionhouse checkbox enabled.
 
 ```
 Alchemy -- cheapest 1 to 300 route  [CraftRoute (optimized)]
