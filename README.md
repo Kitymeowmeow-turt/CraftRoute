@@ -13,6 +13,7 @@ I'd like to show you in game screenshots but I'm wary of blozzard, so I'm going 
 
 Using CraftRoutes for non-gnomes is simple, you go to the auction house, scan, hit the create route button. The **copy and pastable report** (Ctrl+A Ctrl+C) you receive has a cost breakdown with comparison to the total cost breakdown of the static guide website many use, wow-professions. Below is a picture of what you would see in game when you generate a report.
 
+```
 Alchemy -- cheapest 1 to 300 route  [CraftRoute (optimized)]
 
 Guide comparisons (each priced with real AH data, buying lowest first):
@@ -103,6 +104,8 @@ Total cost after vendoring: 16g 45s 28c
   36x mighty troll's blood potion  -> sell to vendor  (0g 1s 5c each, 0g 37s 80c total)
   52x minor healing potion  -> sell to vendor  (0g 0s 5c each, 0g 2s 60c total)
   20x minor mana potion  -> sell to vendor  (0g 0s 10c each, 0g 2s 0c total)
+...
+```
 
 ## The Algorithm 
 
