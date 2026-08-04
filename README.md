@@ -116,3 +116,4 @@ For this last picture it is the stage 2 loop from above expanded. What occurs he
 <img width="4524" height="1686" alt="CraftRoute Algorithm Flowchart-selection - Copy (2)" src="https://github.com/user-attachments/assets/bd7c71cc-fbe3-414c-a07b-2d64213a3a39" />
 
 
+## **FAQ** In progress
