@@ -3,7 +3,7 @@ Addon for OctoWow
 
 CraftRoute is a OctoWow addon that calculates the cheapest possible route to level any of the game's 9 professions from any level to any other level, using real, live Auction House prices rather than guesses.
 
-The core problem it solves: leveling a profession efficiently means knowing, at every single skill point, which recipe is actually cheapest to craft right now — not which one a guide from years ago said was cheapest, and not which one looks cheap until you actually try to buy the reagents and find the same bottlenecks everyone else using the static guide will find. CraftRoute answers that by scanning the AH itself and calculating from scratch.
+The core problem it solves: leveling a profession efficiently means knowing, at every single skill point, which recipe is actually cheapest to craft right now — not which one a guide from years ago said was cheapest, and not which one looks cheap until you learn that its 3rd ingredient is 300% over the typical price. CraftRoute answers that by scanning the AH itself, storing every single relevant post for the profession in question, and calculating from scratch.
 
 <img width="1405" height="767" alt="craftpathJC" src="https://github.com/user-attachments/assets/8629a0d4-2b80-471b-abec-f7f22d364d73" />
 
