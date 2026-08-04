@@ -13,4 +13,4 @@ CraftRoutes use is simple, you go to the auction house, scan, hit the create rou
 <img width="887" height="666" alt="Screenshot 2026-08-04 095027" src="https://github.com/user-attachments/assets/d91598ae-5078-4067-8c2c-47e53df8babe" />
 <img width="887" height="467" alt="Screenshot 2026-08-04 095050" src="https://github.com/user-attachments/assets/f55d4903-bdcc-494a-a8e4-1f9f22f149ee" />
 
-It covers all 9 professions (Alchemy, Blacksmithing, Cooking, Enchanting, Engineering, Jewelcrafting, Leatherworking, Survival, Tailoring), with every recipe's thresholds, reagents, and learn-source individually verified OctoWow data rather than assumed — and 856 vendor sell prices and 170 vendor buy prices confirmed the same way, not estimated.
+It covers all 9 professions (Alchemy, Blacksmithing, Cooking, Enchanting, Engineering, Jewelcrafting, Leatherworking, Survival, Tailoring), with every recipe's thresholds, reagents, and learn-source individually verified from the OctoWow database rather than assumed — and 856 vendor sell prices and 170 vendor buy prices confirmed the same way, not estimated.
