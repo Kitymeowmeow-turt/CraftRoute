@@ -111,6 +111,7 @@ Total cost after vendoring: 16g 45s 28c
 
 <img width="2356" height="3900" alt="CraftRoute Algorithm Flowchart-selection - Copy" src="https://github.com/user-attachments/assets/e29eaedb-738e-4df4-877d-a56ddd4f6931" />
 
+### Stage 2 Expanded
 For this last picture it is the stage 2 loop from above expanded. What occurs here is a production has been extended because its cheaper to make, needed later, and you may as well get skillups for it. The problem is that now we need to do a trimming of the recipe that comes after the one where we chose to make more.
 
 <img width="4524" height="1686" alt="CraftRoute Algorithm Flowchart-selection - Copy (2)" src="https://github.com/user-attachments/assets/bd7c71cc-fbe3-414c-a07b-2d64213a3a39" />
