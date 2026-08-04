@@ -21,6 +21,9 @@ Using CraftRoutes is simple, you go to the auction house, scan, hit the create r
 ## The Algorithm 
 
 <img width="2356" height="3900" alt="CraftRoute Algorithm Flowchart-selection - Copy" src="https://github.com/user-attachments/assets/e29eaedb-738e-4df4-877d-a56ddd4f6931" />
+
+For this last picture it is the stage 2 loop from above expanded.
+
 <img width="4524" height="1686" alt="CraftRoute Algorithm Flowchart-selection - Copy (2)" src="https://github.com/user-attachments/assets/bd7c71cc-fbe3-414c-a07b-2d64213a3a39" />
 
 
