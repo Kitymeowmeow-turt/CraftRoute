@@ -11,7 +11,7 @@ It covers all 9 professions (Alchemy, Blacksmithing, Cooking, Enchanting, Engine
 
 <img width="1405" height="767" alt="craftpathJC" src="https://github.com/user-attachments/assets/8629a0d4-2b80-471b-abec-f7f22d364d73" />
 
-Using CraftRoutes is simple, you go to the auction house, scan, hit the create route button. The **copy and pastable report** (Ctrl+A Ctrl+C) you receive has a cost breakdown with comparison to the total cost breakdown of the static guide website many use, wow-professions. Below is a picture of what you would see in game when you generate a report.
+Using CraftRoutes for non-gnomes is simple, you go to the auction house, scan, hit the create route button. The **copy and pastable report** (Ctrl+A Ctrl+C) you receive has a cost breakdown with comparison to the total cost breakdown of the static guide website many use, wow-professions. Below is a picture of what you would see in game when you generate a report.
 
 <img width="887" height="635" alt="Screenshot 2026-08-04 094928" src="https://github.com/user-attachments/assets/c76145c0-5d0b-4029-ba43-03d4e463736d" />
 <img width="887" height="592" alt="Screenshot 2026-08-04 094956" src="https://github.com/user-attachments/assets/d71a6547-85fa-450e-8ee1-2aff3ef5f9f5" />
