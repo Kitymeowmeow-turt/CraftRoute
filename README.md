@@ -106,6 +106,971 @@ Total cost after vendoring: 16g 45s 28c
   20x minor mana potion  -> sell to vendor  (0g 0s 10c each, 0g 2s 0c total)
 ...
 ```
+## Version History
+CraftRoute Changelog
+=====================
+
+Note: version tracking wasn't kept up consistently for a stretch of
+development -- v1.0 sat unchanged through several real feature additions and
+a bug fix before anyone noticed. The entries below are reconstructed after
+the fact and assigned to version numbers as if tracking had been kept up
+throughout, using standard semantic versioning: MAJOR.MINOR.PATCH, where
+MINOR bumps mean new functionality and PATCH bumps mean bug fixes, both
+backward-compatible. Pure UI wording/positioning tweaks and profession data
+corrections (vendor prices, exclusions, threshold fixes, etc.) aren't broken
+out as their own version entries, consistent with how versioning was already
+being applied once it started being tracked deliberately.
+
+Correction: the stretch from what's now v2.2 through v2.4.14 (previously
+tracked as a single unbroken v2.1.x patch line) drifted from that standard --
+whole professions becoming available (Cooking, Jewelcrafting) and a real new
+report feature (per-band shopping lists) were bumped as patches instead of
+minor versions. Renumbered to correct this; the entries' content is
+unchanged, only the version labels and this file's own formatting moved.
+
+Ordering: entries are newest-first from here on (this file was reversed
+once, in full, to establish that -- no entry's own content changed, only
+the order they appear in). New entries get added directly below this note,
+not appended to the end.
+
+
+v2.10
+-----
+New: no more invisible crafts. A recipe needed as a reagent could
+previously get its shortfall covered silently -- crafted from raw
+materials as part of a DIFFERENT recipe's cost, with no route step of
+its own, even when the exact same craft was available to show visibly
+at the exact same cost. The three extension/insertion passes now treat
+a real cost tie as a win for the visible option, so these get pulled
+onto their own step instead of staying hidden. Also fixed a real,
+previously-latent bug this exposed: trimming credited free skill by
+shrinking whatever came after an extension, but never extended the
+original step's own range to match, which could leave a real gap in
+the route. Added a safety net too -- if anything still resolves
+invisibly despite the fix, it now gets printed as its own "Also craft
+along the way" section rather than staying hidden.
+
+
+v2.9.2
+------
+Survival custom insertions updated: Nutritious Rations reduced to 5
+units (still @210), and a new one added -- Vine Cutter x2@215. Checked
+first: Vine Cutter's real orange is exactly 215, and Nutritious
+Rations at the new quantity lands at exactly 215 too, so the full
+chain (Savory Fishing Lure -> Nutritious Rations -> Vine Cutter) lines
+up with no gap or overlap.
+
+
+v2.9.1
+------
+Fix: Nutritious Rations custom insertion moved back to skill 210, as
+originally requested -- it had been changed to 205 (matching its own
+recipe threshold) without realizing 210 was deliberate: Savory Fishing
+Lure's own insertion (10 units from 200) already lands at 210 itself,
+so 205 would have landed inside that range instead of after it. 210
+was correct from the start.
+
+
+v2.9
+----
+New: custom insertions -- a specific quantity of a specific recipe,
+forced into the route starting at a specific skill point, for items
+the player wants for their own reasons (stockpiling, personal use)
+rather than anything the cost optimizer should second-guess. Distinct
+from mandatory-crafts (always exactly 1 unit at the recipe's own
+orange) -- this is user-specified quantity and starting point, still
+gets real chance-aware skill-up credit for whatever portion actually
+falls within the recipe's window. First entries: Engineering (Explosive
+Sheep x5@150, Solid Dynamite x20@175, Big Iron Bomb x20@190) and
+Survival (Savory Fishing Lure x10@200, Nutritious Rations x15@205).
+Feeds into the same optimization cascade re-run as mandatory-crafts, so
+an inserted item's own reagent needs get accounted for too.
+
+
+v2.8
+----
+New: mandatory-crafts insertion (previously Enchanting-only, for its
+required rods) now covers Engineering's own tools too (Arclight
+Spanner, Gyromatic Micro-Adjustor) -- unconditionally inserted at their
+own orange threshold like the rods always were, instead of the old
+conditional "only if cheaper" check. And new for every profession this
+applies to: after a mandatory item gets inserted, the full extend/
+insert/produce/trim optimization cascade runs again, so the item's own
+reagent needs get the same treatment as everything else in the route
+instead of sitting there unoptimized. Removed the old conditional tool-
+acquisition mechanism entirely, since nothing was left to use it once
+Engineering moved to the unconditional one.
+
+
+v2.7.1
+------
+Survival now uses its own report bands (1-75/75-150/150-225/225-300)
+instead of the standard 1-50/50-125/125-200/200-300 split -- its recipe
+thresholds land much more evenly across the full skill range than the
+other professions', so the default split didn't group its steps well.
+Display-only, doesn't affect route calculation or cost for any
+profession.
+
+
+v2.7
+----
+New: a recipe that's never chosen as a route step at all, but is needed
+later as a reagent, used to always get flat-crafted at zero skill-up
+value -- even when its own orange-grey window was sitting completely
+open and unused somewhere earlier in the route. ApplyRecipeInsertion now
+checks for that, and inserts a dedicated run at the earliest real
+opportunity instead, absorbing whatever it displaces the same way an
+extension does, only keeping the change if a real, whole-route cost
+comparison says it's actually cheaper. Found from a real leveling report
+(Sturdy Net crafted with zero skill gained) and built out over an
+extended design conversation before any code was written. Not yet
+verified against a live route.
+
+
+v2.6.8
+------
+Excluded Thorium Spurs from Blacksmithing.
+
+
+v2.6.7
+------
+"Scan All Professions" reworked instead of continuing to chase the old
+loop symptom directly: replaced the previous 18-job chain (9 professions
+x materials/recipes each) with just 2 combined, deduplicated scans --
+every reachable material across every enabled profession once, then
+every recipe-scroll prefix the same way. Faster (no re-scanning a
+material shared by multiple professions once per profession) and
+substantially shrinks whatever surface area existed for the earlier
+unconfirmed reentrancy symptom, on top of directly matching how it was
+asked to work.
+
+
+v2.6.6
+------
+Fix (real cause, part 3): "Total AH cost" never actually had training
+costs added to it, despite the "includes one-time recipe/training
+costs" line directly below it claiming otherwise -- that line was never
+true, just not visible until the previous two fixes stopped masking it
+with unrelated inflation. Training is now added into the total exactly
+once, correctly. "Total AH cost" and "CraftRoute (optimized)" should
+now match exactly for the same route.
+
+
+v2.6.5
+------
+Fix (real cause, part 2 -- v2.6.4's rounding fix was real but only a
+minor contributor): "Total AH cost" priced band-by-band couldn't credit
+a byproduct surplus from an earlier band against a reagent need in a
+later one, since each band's shopping-list calculation only saw its own
+steps. The whole-route guide-comparison total doesn't have this
+limitation, which is why it always came out cheaper for the same route.
+Byproduct credit now threads across bands the same way AH depletion
+already did, closing the gap.
+
+
+v2.6.4
+------
+Fix: "Total AH cost" could come out higher than the "CraftRoute
+(optimized)" guide-comparison total for the same route. Root cause: a
+recipe spanning a band boundary got split into fragments for the
+step-by-step display, and each fragment's craft count was rounded up
+independently -- which can only ever need as many or more total
+reagents than rounding the whole, unsplit recipe up once, never fewer.
+Fixed by allocating whole crafts across a step's fragments up front
+instead, guaranteeing they sum to the same total a whole-route
+calculation would use.
+
+
+v2.6.3
+------
+Excluded two more Alchemy recipes: Gold Bar and Truesilver Bar. Both are
+functionally the same as Transmute: Iron to Gold / Transmute: Mithril to
+Truesilver (already excluded), just stored under bare names instead of
+the "Transmute:" prefix, so the earlier exclusion pass missed them.
+
+
+v2.6.2
+------
+The "Total cost after vendoring"/"Total cost after vendor/AH" line is
+now colored (FA0C0C, red) to stand out as the final real number in the
+report.
+
+
+v2.6.1
+------
+Renamed the final report total line to "Total cost after vendoring"
+(sell-back checkbox unchecked) or "Total cost after vendor/AH"
+(checked), matching the same checkbox-dependent wording already used
+for the line above it.
+
+
+v2.6
+----
+New: "trimming" -- ApplyPureProductionExtensions always priced its
+extra flat-added crafts as zero-skill, even when the recipe hadn't
+actually reached its own grey yet, meaning real skill-up chance from
+those crafts was being ignored entirely. ApplyTrimming now collects
+that unconditionally-free skill (crafting those units was already
+locked in regardless of cost) and shrinks or removes whatever step(s)
+immediately follow to the extent that ground is already covered.
+Cascades: trimming a step can create a new shortfall elsewhere, so the
+extend/produce/trim sequence loops until a full cycle changes nothing.
+Verified with isolated, hand-checked math against the exact scenario
+this was designed around, both single-step and multi-step cascade
+cases. Not yet tested against a live route with real fresh data.
+
+
+v2.5.2
+------
+Skinning Knife confirmed at 82c, added to the vendor-preferred materials
+list.
+
+
+v2.5.1
+------
+Added 8 newly-confirmed vendor-buyable Survival reagents to the vendor-
+preferred materials list (Junglevine Wine, Mining Pick, Molasses
+Firewater, Remedy Herbs, Rugged String, Salt, Soothing Spices, Springy
+Rope) -- always bought from vendor now, no longer AH-scanned or
+AH-compared. 12 others in the same review round were already confirmed
+from earlier profession work and matched exactly, no changes needed.
+
+
+v2.5
+----
+New: Survival is enabled! All 9 professions now available. Real recipe
+data (89 recipes) and a full learn-source review are both complete, no
+known open data gaps -- same bar Cooking and Jewelcrafting met before
+their own enables.
+
+
+v2.4.14
+-------
+Survival's scroll-name prefix confirmed ("Outline:") and applied to
+Jungle Remedy, its one AH-only recipe. All 89 Survival recipes now have
+a confirmed learn-source. Still not enabled.
+
+
+v2.4.13
+-------
+Survival learn-source review: 80 confirmed trainer-taught, 2 confirmed
+quest rewards, 6 confirmed excluded. One recipe (Jungle Remedy) is
+confirmed AH-only but still needs its real scroll name -- Survival
+doesn't have an established scroll-name prefix convention documented
+yet, so this one's left unset rather than guessed. Still not enabled.
+
+
+v2.4.12
+-------
+Survival's real recipe data is in -- 89 recipes built from the
+spreadsheet the user provided. Starfeather Arrows removed entirely (two
+recipes shared a name, would have collided in lookup). Two real item
+name collisions resolved: item #12361 is Blue Sapphire (not "Pure
+Moonstone", which was already claimed by Jewelcrafting), and Survival's
+own "Striped Melon Seeds" covered two different real items -- #51712 is
+really Juicy Watermelon. Both tools (Whittle, Blacksmith Hammer)
+confirmed and priced. Still not enabled -- learn-source data hasn't
+been done yet, same as every other profession's rollout.
+
+
+v2.4.11
+-------
+Survival profession scaffolding added -- button in place (taking
+Tailoring's old position, Tailoring shifted down one slot), registered
+in the toc, disabled until real recipe data arrives. No recipes yet:
+only item ID/name lookups for crafted outputs and reagents have been
+provided so far, not the recipe structure itself (which reagents, what
+quantities, what skill thresholds) -- that's still needed before this
+profession can actually be built out.
+
+
+v2.4.10
+-------
+Fixed the negative-cost bug: ApplyPureProductionExtensions was crediting
+a fabricated "savings" to other steps based on a disconnected price
+lookup unrelated to what those steps actually paid, which could (and
+did) push individual step costs negative. It now compares real,
+recomputed total costs for the route with and without each proposed
+extension and only keeps changes that are genuinely cheaper -- same
+proven approach ApplyDownstreamExtensions already used. Verified with an
+isolated before/after test on real scan data: the fabricated 78%
+"discount" and all negative-cost steps are gone; the route correctly
+lands back at its real total.
+
+
+v2.4.9
+------
+Report summary line now correctly says "Returned money after selling
+crafts back to vendor" when AH sell-back isn't enabled, instead of
+implying AH was considered when it wasn't.
+
+
+v2.4.8
+------
+Vendor sell-price coverage is complete -- confirmed all 7 remaining
+items (Crafted Light/Heavy/Solid Shot, Green/Red Firework, Firework
+Launcher, Heavy Leather Ball) cannot be sold to any vendor, added as 0
+same as the earlier confirmed-zero items. 856 entries total. Every
+non-excluded recipe across all 7 sellback-eligible professions now has
+a real, user-verified vendor sell price on record.
+
+
+v2.4.7
+------
+Vendor sell-price coverage completed to 849 items -- effectively full
+coverage across all 7 sellback-eligible professions. Greenskeeper
+(Engineering) and Refined Dwarven Necklace (Jewelcrafting) excluded
+entirely rather than priced -- neither had a reliable confirmed item ID.
+7 items (mostly Engineering ammo/fireworks) still pending confirmation
+of a "not sellable" status before being marked 0.
+
+
+v2.4.6
+------
+Sell-back is re-enabled, backed by real data this time. Built
+data_vendorsellprices.lua from 217 vendor sell prices collected directly
+by the user via octowow.st -- replaces the old live tooltip/aux-itemId
+lookup entirely (removed, not just bypassed). Items confirmed not
+sellable to any vendor (Elixir of Rapid Growth, Mighty Rage Potion,
+Goblin Radio KABOOM-Box, Hypertech Battery Pack) are stored as a real
+zero rather than guessed at. Coverage isn't total -- 642 standard
+vanilla crafted items across the other 6 professions are still
+unverified and correctly show no sell-back credit rather than a guess,
+same as always.
+
+
+v2.4.5
+------
+Corrected two recipe names to match their real in-game item names,
+confirmed directly: Blacksmithing's "Thorium Hammer" is actually "Inlaid
+Thorium Hammer", and Leatherworking's "Leather Helmet" is actually "Wild
+Leather Helmet".
+
+
+v2.4.4
+------
+Removed the aux-addon price-history fallback entirely. If CraftRoute's
+own scan doesn't have a price for something, that's now treated as
+genuinely unknown rather than filled in from a secondary data source --
+if it isn't in a real CraftRoute scan, the addon no longer assumes you
+can buy it. Also removed several helper functions that existed solely
+to support the removed fallback and had no other callers left.
+
+
+v2.4.3
+------
+Sell-back is temporarily disabled entirely -- reports no longer include
+any leftover-crafted-item sell credit, the AH sell-back checkbox is
+disabled, and the associated extra scan step is skipped. Crafted-output
+vendor prices were never verified the way reagent prices have been
+throughout this project; this stays off until that verification is done.
+
+
+v2.4.2
+------
+Fix: a Jewelcrafting report recommended crafting Rough Gemstone Cluster
+with a sell-back credit over 1g, despite it only vendoring for 20c.
+Traced this to a real gap -- the vendor sell-back price comes from a
+live tooltip lookup keyed by an item ID resolved from aux-addon's own
+cache, which CraftRoute has no way to verify. A stale or wrong entry
+there would silently price a completely different item with no way to
+tell from the number shown. Added a cross-check in both the sell-back
+calculation and the AH-history fallback used for buying decisions:
+before trusting a resolved item ID, verify it actually maps back to the
+expected item name. A mismatch is now treated as "no price available"
+rather than "confidently show a wrong one."
+
+
+v2.4.1
+------
+Added Shimmering Oil to the vendor-preferred materials list (5s) --
+always bought from vendor now, no longer AH-scanned or AH-compared.
+
+
+v2.4
+----
+Reports now show a separate shopping list for each skill band (1-50,
+50-125, 125-200, 200-300), placed right above that band's step section
+instead of one combined list at the end -- shop for the band you're
+actually about to work through. The four band totals are priced with
+one continuous AH depletion timeline, not four independent "fresh
+market" scenarios, so they sum to exactly the same real total as
+before -- the top summary is now derived directly from those same four
+numbers, so it can never drift out of sync with what's shown below it.
+
+
+v2.3.1
+------
+Jewelry Lens, Jewelry Scope, and Precision Jewelry Kit confirmed as
+AH-purchasable -- all 4 Jewelcrafting tools now have confirmed sourcing
+in the "Tools you'll need" report note. No open data gaps left on
+Jewelcrafting.
+
+
+v2.3
+----
+Jewelcrafting is enabled! All 8 professions now available. Full
+recipe-level review complete (194/194 classified, no threshold-ordering
+issues remaining). One informational gap still open, doesn't affect
+cost correctness: 3 of Jewelcrafting's 4 tools still have no confirmed
+vendor price, so they won't show in the "Tools you'll need" note yet.
+
+
+v2.2.9
+------
+Opaline Illuminator confirmed AH-only, given the same treatment as the
+other 64 AH recipes. Dense Gemstone Cluster's yellow threshold corrected
+to 235 (was 230, below its own orange).
+
+
+v2.2.8
+------
+Jewelcrafting learn-source review, first pass: 79 confirmed trainer-
+taught, 71 confirmed real scroll names added (64 AH-only, 7 vendor-bought
+with real prices), 27 excluded, 2 confirmed boss drops (new "Boss"
+source, alongside Trainer/Recipe/Quest), 11 confirmed quest rewards.
+Dense Gemstone Cluster removed from the exclusion list (confirmed
+trainer-taught) -- its threshold data still has a known issue from the
+original data audit though, flagged for a follow-up, not silently left
+broken. One recipe (Opaline Illuminator) wasn't reviewed and is still
+open. Still not enabled in the UI.
+
+
+v2.2.7
+------
+Jewelcrafting's placeholder data replaced entirely with real data
+extracted from Turtle WoW's own addon source (194 recipes, thresholds
+and reagents solid). Found and resolved a handful of real data issues
+along the way -- most notably 4 reagent names that each covered two
+different real items (Star Ruby, Purple Lotus, Huge Emerald, Imperial
+Topaz), which could have silently blended two items' AH prices together
+had they gone in unresolved. Still not enabled -- learn-source data
+(trainer/vendor/AH) and pricing for 3 of its 4 tools are still open,
+same as Cooking's data before its own learn-source pass.
+
+
+v2.2.6
+------
+Excluded all 9 Transmute recipes from Alchemy -- never chosen as a route
+step, never substituted in as a cheaper way to obtain something else's
+ingredient.
+
+
+v2.2.5
+------
+Internal changes to addon initialization and feature availability checks.
+
+
+v2.2.4
+------
+Internal changes to addon initialization and feature availability checks.
+
+
+v2.2.3
+------
+Promoted Hot Spices and Shiny Red Apple to the vendor-preferred list --
+always bought from vendor now, no longer AH-scanned or AH-compared.
+
+
+v2.2.2
+------
+Fix: Thistle Tea's reagent was stored as "Swifthistle" (missing a T) --
+a genuine typo, confirmed against the correct spelling already used
+correctly in 4 Alchemy recipes and present in real scan data. The
+scanner was faithfully querying the AH for an item that doesn't exist;
+the real item never got scanned for Cooking. Also checked the rest of
+Cooking's reagents for the same failure pattern -- no other typos found.
+Added 2 confirmed vendor prices: Hot Spices (40c), Shiny Red Apple (25c).
+
+
+v2.2.1
+------
+Cooking follow-up: reviewed all 41 recipes that were still defaulting to
+an unconfirmed trainer-taught guess. 8 confirmed genuinely trainer-taught
+(kept their existing cost estimates, nothing else needed). 33 excluded
+entirely -- never chosen as a route step, never substituted in as a
+cheaper way to obtain something else's ingredient.
+
+
+v2.2
+----
+New: Cooking is enabled! Its recipe/reagent data was already complete,
+but every recipe was modeled as a flat trainer-cost guess with no real
+learn-source info -- fixed with confirmed data for all 43 recipes: 1
+trainer-taught, 39 vendor-bought (real copper prices added), and 3
+AH-only with no vendor (flagged to wait for a real scan rather than
+guess a price, same as a few older gaps in other professions). Cooking
+hasn't been through the same in-game verification other professions
+have, so treat it as newer and less battle-tested for now, but it's no
+longer blocked on a known data gap.
+
+
+v2.1.7
+------
+Fix: Scan All was reported to loop back to the first profession and
+restart the whole sequence after finishing the last one. Found and fixed
+a real bug -- two places in the scanner could call a scan's completion
+callback synchronously, nested inside whatever had started that scan,
+instead of always going through the normal async update loop like every
+other completion path does. For Scan All, that completion callback is
+what starts the NEXT profession's scan, so it was possible for a new
+scan to begin while an earlier one was still executing further up the
+same call stack, both touching the same shared scanner state. All
+completions now go through a proper deferred queue instead, so a new
+scan can never start from inside an older one's call stack. This is a
+real fix for a real bug -- worth saying plainly, though, that it wasn't
+possible to fully confirm this is the entire explanation without a live
+client to test against. If Scan All still loops after this, that's not
+something to assume is already fixed -- it needs a fresh look.
+
+
+v2.1.6
+------
+Removed the "Total estimated cost (approx, used to pick recipes)" line
+from reports -- it's the algorithm's own internal decision-making number
+(inflated by the scarcity penalty when applicable), not a real price,
+and only ever created confusion sitting next to the actual "Total AH
+cost" figure. Also updated the chat message shown after a report opens
+to use the real total instead of this same internal number, so it
+matches what the report itself and the guide-comparison totals show.
+
+
+v2.1.5
+------
+Fix: a report recommended buying 128 of a reagent that only ever had 34
+listed -- an impossible shopping list. The existing 3x scarcity penalty
+on short-supply reagents was a soft deterrent, not a hard limit, so a
+scarce-but-otherwise-cheap recipe could still look "cheapest" no matter
+how large the real shortage got. Craft-vs-buy now tracks genuine
+achievability (is there actually real supply left, from the AH or a
+vendor) alongside cost, not just cost -- once a reagent's real supply is
+truly exhausted, the recipe needing it becomes unusable at that point,
+same as it already does for unscanned or unpriceable items, so the
+route automatically switches to the next-best alternative for the rest
+of that skill range. A scarce, cost-effective recipe now gets used for
+as many crafts as real supply actually supports, then hands off --
+instead of being recommended for a quantity that was never realistic to
+begin with.
+
+
+v2.1.4
+------
+Fix: a real Leatherworking 1-300 report recommended buying 13755 Ruined
+Leather Scraps -- technically the cheapest way to get enough Light
+Leather by the numbers, but Ruined Leather Scraps isn't realistically
+available on the AH anywhere near that quantity, and it's a low-value
+material not worth the trouble either way. Light Leather is now fully
+excluded from both CraftRoute's own skill-up selection and from being
+silently substituted in as a make-vs-buy source for anything else that
+needs it -- it'll always be bought directly. Checked every place a
+craft substitution decision happens in the code to make sure this is
+enforced consistently, not just at the one place that first surfaced
+the problem.
+
+
+v2.1.3
+------
+Added Holy Candle (7s) to the vendor-preferred materials list -- missed
+in the original v2.1 pass. Same treatment as the other 38: always bought
+from vendor, no longer scanned on the AH.
+
+
+v2.1.2
+------
+Fix: the make-vs-buy decision for regular craftable materials (grinding
+stones, blasting powders, and similar reagent-chain items) wasn't
+actually depletion-aware -- it compared a flat, single-price "cheapest
+current listing" number against the craft cost, rather than checking
+what buying the FULL quantity needed would really cost once cheaper
+listings run out. A couple of cheap listings could make "buy" look
+better than it really was for a larger need. Craft-vs-buy now applies
+the same real order-book-walking logic already used for essence
+conversion, so it correctly recurses through multi-level craft chains
+(e.g. Engineering's Hi-Explosive Bomb needing Mithril Casing needing
+Mithril Bar) with real AH depletion applied at every level.
+
+
+v2.1.1
+------
+Fix: a real, live bug -- a Blacksmithing 1-300 report recommended buying
+5040 Ruined Leather Scraps, a Leatherworking-only material. Blacksmithing
+needs Light Leather for a handful of weapon grips; Leatherworking
+separately has its own real recipe for crafting Light Leather. The
+make-vs-buy logic's cross-profession fallback (designed narrow -- one
+specific case, Enchanting needing Blacksmithing's own Arcanite Rod --
+but never actually restricted to it in code) matched Leatherworking's
+recipe and decided to "craft" Light Leather, despite a Blacksmith having
+no way to actually perform that craft. Fixed with an explicit allowlist;
+the only entry is the one confirmed-legitimate case, Arcanite Rod.
+
+
+v2.1
+----
+New: a reviewed, approved list of 38 materials (dyes, threads, vials,
+flux, and similar) that are always bought from a vendor instead of the
+AH, even on the rare chance the AH is momentarily cheaper. Vendors never
+run out of stock and never change price, so once a material's real
+vendor price is confirmed, there's no reason to gamble on a
+possibly-stale AH scan for it. These materials are also no longer
+included in AH scans at all (per-profession or Scan All) -- there's
+nothing to check the AH for anymore.
+
+
+v2.0.1
+------
+Two bugs found the first time this was actually run in-game, both fixed:
+  - A syntax error (an accidental deletion during the v2.0 work took the
+    ShoppingList function's own declaration line out with it, leaving
+    its body orphaned outside any function).
+  - A runtime error right after (guide-priced routes were missing a
+    field, recipeIndex, that ShoppingList/SellBackCredit depend on to
+    look up a recipe's own reagent list).
+Also: report window text polish (profession name capitalized, clearer
+guide-comparison header wording, "wowprofessions" now displays as
+"Wow-Professions.com", reworded the trainer-cost estimate note), and a
+real fix for the report window's scrollbar, which wasn't scrolling at
+all for long reports -- turned out the vanilla client doesn't reliably
+auto-update a scrollbar's range when its EditBox content is resized
+programmatically, so the range and mouse-wheel handling are now both
+set explicitly instead of assumed.
+
+
+v2.0
+----
+New: CraftRoute now compares its own optimized route against real
+static leveling guides (starting with wow-professions.com, covering all
+6 leveled professions) and shows you whichever one is actually cheaper.
+Both routes get priced through the exact same depletion-aware engine,
+each with its own independent, freshly-reset AH order-book state -- two
+honest side-by-side scenarios, not one route's leftovers biasing the
+other. The top of the report now shows every compared total, with the
+winner marked and shown in full below.
+
+Getting a static guide's route to a comparable state as CraftRoute's own
+took real correction work, not just transcription -- multiple steps in
+the source guide ran past a recipe's real point of obsolescence or
+started before it was even usable, a couple of named recipes didn't
+match anything in the data (one turned out to be a genuine gap in our
+own data and got added; others didn't check out and were left out), and
+one Blacksmithing recipe was wrongly assumed to be specialization-locked
+before being confirmed available to everyone via a quest. All of that
+verification work is preserved in DEVNOTES.md for the professions and
+guides already checked.
+
+
+v1.14
+-----
+New: recipes that come from a quest or reputation turn-in rather than a
+trainer or an AH-buyable scroll now show up correctly -- orange text,
+tagged "Quest" instead of "Trainer"/"Recipe", no fabricated gold learn
+cost. Applied to Blacksmithing's 6 Imperial Plate recipes (Belt,
+Shoulders, Bracers, Boots, Helm, Gauntlets), previously modeled as if
+they were ordinary AH-buyable patterns.
+
+
+v1.13.1
+-------
+Fix: hundreds of reagent references across Blacksmithing, Engineering,
+Leatherworking, and Tailoring were stored as bare item IDs instead of
+names. This wasn't just a readability problem -- an item stored this way
+couldn't be recognized by the make-vs-buy logic as something craftable
+in its own right, and couldn't be matched against scanned AH listings
+(which are keyed by name) at all. All confirmed and converted to real
+names.
+
+
+v1.13
+-----
+New: three confirmed-real recipes added that were missing from the
+data entirely -- Enchant Gloves - Agility (Enchanting), Azure Silk Hood
+and Double-stitched Woolen Shoulders (Tailoring). Also added the
+confirmed vendor price for Formula: Runed Arcanite Rod (2g 20s), so its
+learn cost now reflects a real, cheaper number instead of a rough
+estimate.
+
+
+v1.12.1
+-------
+Fix: the essence conversion feature (v1.12) priced the 5 Greater essences
+correctly but never actually scanned for their Lesser counterparts, so
+the "convert" option could only ever be considered if you happened to
+already have Lesser essence data from an unrelated scan. Scanning
+(both the per-profession button and Scan All) now automatically includes
+a Greater essence's Lesser counterpart whenever the Greater one is
+itself reachable at your current skill.
+
+
+v1.12
+-----
+New: essence conversion awareness for Enchanting. The 5 Greater essences
+(Astral/Eternal/Magic/Mystic/Nether) can each be obtained by buying 3x the
+matching Lesser essence off the AH and combining them -- one-way, no
+converting back. The path calculation, shopping list, and true-cost totals
+now all check this alongside the existing AH-price and make-vs-buy-craft
+options, and pick whichever is actually cheapest. Depletion-aware: a
+chosen conversion draws down the LESSER essence's own listings, not the
+Greater's, so a shortage of Greater essences (or of Lesser ones) is
+reflected accurately either way.
+
+
+v1.11
+-----
+New: widened the downstream-extension pass to reach reagent needs the
+previous version genuinely couldn't. The existing extension mechanism only
+works by extending a recipe's own skill-up range further, so it could never
+help once a later reagent need falls beyond the producing recipe's own grey
+point -- past there, the recipe contributes zero skill-up, so there was
+nothing for the old mechanism to extend.
+
+Added a second pass for exactly this case: for any reagent still falling
+short somewhere in the path after the existing extension pass runs, checks
+whether crafting a few more units of it anyway -- flat cost, zero skill
+value, added onto that recipe's existing step wherever it already sits --
+would beat buying the shortfall separately. No skill-range reasoning
+needed, just "is crafting this cheaper than buying it."
+
+Two bugs caught and fixed during development, before ever shipping:
+  - The first draft added the new craft cost directly to the running
+    total without subtracting the cost it was replacing, double-counting
+    against the downstream recipe's already-assumed buy cost.
+  - Even after fixing the total, the individual downstream step's own
+    displayed subtotal still showed its old, pre-credit cost -- so the
+    report's per-step breakdown wouldn't add up to its own stated overall
+    total. Fixed by crediting the savings back to whichever step(s)
+    actually demand the reagent, proportional to how much each needs (a
+    reagent can be shared by more than one step).
+
+Verified with a constructed scenario the old pass couldn't reach: confirmed
+the producing recipe correctly gained extra crafts, the real shopping list
+correctly avoided a separate purchase entirely, and after both fixes, the
+sum of every displayed step subtotal matches the report's overall total
+exactly.
+
+
+v1.10.1
+-------
+Fix: the "Total estimated cost" figure could come out wildly higher than
+the real "Total AH cost" for professions with many recipes sharing common
+reagents (e.g. Blacksmithing's Dense Stone, Mithril Bar, Rough Stone) --
+seen as high as 945g estimated vs 184g actual on a real Blacksmithing run.
+
+Root cause: a leftover redundancy from the v1.10 work. Before path-wide
+tracking existed, recipe selection used a standalone heuristic assuming a
+candidate recipe might get used across up to 50 skill points, since there
+was no way to know what else might need the same reagent. v1.10 added a
+real, accurate path-wide consumption tracker but left that old heuristic
+running on top of it -- for a reagent shared by many recipes, every
+candidate's own speculative 50-point assumption stacked on top of every
+other candidate's, compounding the estimate far past what the route would
+actually need.
+
+Removed the now-redundant heuristic. Recipe selection now prices exactly
+what one craft needs, right now, against the live path-wide tracker --
+recomputed fresh every skill point, so this is an accurate marginal price
+with no speculative stacking. Verified directly against the real
+Blacksmithing case from the bug report: estimated and actual costs now
+land within about 2% of each other (160g73s vs 157g72s), down from a 5x gap.
+
+
+v1.10
+-----
+New: path-wide depletion-aware pricing. Previously, every part of the
+calculator that compared costs -- picking which recipe to use at each skill
+point, deciding whether to extend an earlier recipe run to cover a later
+reagent need, and deciding whether to craft a required tool or buy one
+pre-made -- priced reagents using only "today's single cheapest listing,"
+with no concept of how much is actually available at that price, or
+whether an earlier decision already bought up that same cheap supply. This
+meant the algorithm could genuinely recommend routes that weren't buyable
+as calculated: recipes needing more of a reagent than the Auction House
+actually has listed, with the true cost only surfacing after the fact in
+the final shopping list.
+
+All three places now price against real, live listing depletion instead:
+  - Recipe selection at each skill point recomputes costs using a running
+    tracker of what earlier, already-locked-in steps have consumed, so
+    later steps correctly see reduced remaining supply -- not just within
+    one recipe's own usage, but across every different recipe competing
+    for the same reagent anywhere in the path.
+  - The "should I extend this recipe run" decision now compares real
+    listing-depletion costs for both options instead of flat pricing.
+  - The "craft this required tool or buy one pre-made" decision now prices
+    the buy-it-premade option the same depletion-aware way.
+
+Also removed the "Section total" line from the printed report -- it was
+built from the same approximate per-step estimates used to pick recipes,
+not the real Auction House cost, and being labeled a "total" was
+misleading next to the report's actual true-cost figures.
+
+
+v1.9.3
+------
+Fix: the report window's scrollable area was still capping out short of the
+true bottom of the text, even after the v1.9.2 fix -- confirmed the actual
+report text itself was always complete (fully retrievable via copy-paste),
+so the bug was specifically in how the scroll area was being sized. Root
+cause: GetHeight() can return a stale value (left over from the previous
+report, or 0) if read on the same frame SetText() was just called on --
+the game's layout system hasn't necessarily recomputed it yet. Deferred the
+height read by a few OnUpdate ticks so it reflects the actual new content,
+and added a 20% safety margin on top as an extra hedge, since undersizing
+(cutting off content) is a much worse failure than a little unused scroll
+space.
+
+
+v1.9.2
+------
+Fix: the report window crashed with "attempt to call method 'GetStringHeight'"
+every time it tried to open. GetStringHeight() was added to the WoW API in a
+later client version and isn't actually part of the original 1.12/vanilla
+API Turtle WoW runs on -- the same category of mistake as the EditBox
+Disable() crash fixed earlier. Switched to GetHeight(), a basic method
+available on every UI object, which reflects the same auto-computed wrapped
+text height on a width-constrained FontString.
+
+
+v1.9.1
+------
+Fix: /craftroute (and the Create CraftRoute button) refused to run at all
+if aux-addon wasn't installed or hadn't been loaded yet, even though aux is
+only ever used as an optional fallback price source -- CraftRoute's own AH
+scan data and vendor prices are enough on their own. Removed the leftover
+hard requirement check.
+
+
+v1.9
+----
+Internal changes to addon initialization and feature availability checks.
+
+
+v1.8.2
+------
+Fix: Scan All's status text showed each individual job's own item count
+(e.g. "68" for Alchemy's materials) with no indication that Scan All chains
+12 separate jobs together (6 enabled professions x materials+recipes) --
+easy to misread as "Scan All only found 68 items total" when the other 11
+jobs were still to come. Status text now shows "job N/12" alongside each
+step so overall progress through the whole sequence is clear.
+
+
+v1.8.1
+------
+Fix: the "Scan All Professions" button was missing its label text entirely
+-- present and functional, just invisible.
+
+
+v1.8
+----
+New: Configurable sell-back threshold. The previously hardcoded 1.5x
+(50% above vendor price) threshold for recommending an Auction House sale
+over a vendor sale is now a real, adjustable setting -- a percentage box in
+the UI wired directly into the calculation, not just a cosmetic number.
+
+New: Skill-range-aware materials scanning. Setting a starting skill above 1
+now makes the materials scan skip reagents that are only needed by recipes
+already entirely grey at that starting skill, genuinely reducing scan time
+for a narrow-range route (e.g. 250-280) rather than always scanning for the
+full 1-300 range. (The same filtering was initially also applied to recipe
+scanning, but was reverted after review showed it didn't actually save any
+time there -- a prefix-based recipe scan pages through every result for
+that prefix regardless of how many specific scrolls are relevant, so
+filtering only changed what got stored, not how many queries were needed.)
+
+
+v1.7.2
+------
+Fix: EditBox widgets don't support a Disable() method in vanilla WoW's UI
+API, unlike Button and CheckButton. Calling it on a disabled profession's
+number boxes threw a runtime error that halted the entire panel-building
+function partway through -- silently breaking the whole CraftRoute tab
+every time (blank past a certain point, missing checkbox, missing Scan All
+button) with no visible error unless other addons weren't suppressing it.
+Switched to the correct vanilla-compatible approach: EnableMouse(false) plus
+greying out the text color.
+
+
+v1.7.1
+------
+Fix: the report window's scrollable area was sized by counting newline
+characters in the report text, which didn't account for lines that visually
+wrap to multiple lines at the window's width. Several genuinely long lines
+in the report caused the calculated scroll height to fall short of the real
+rendered height, capping scrolling before the true bottom of the text.
+
+
+v1.7
+----
+New: "Create CraftRoute" button added to each profession's row, alongside
+two editable number boxes (defaulting to 1 and 300), replacing the
+standalone "Recipes" button. Runs the route calculation directly from the
+UI, equivalent to typing /craftroute <profession> <start> <target> by hand.
+
+
+v1.6
+----
+New: Materials and recipe scanning merged into one click. The main
+profession button now automatically continues into recipe scanning as soon
+as materials finish, instead of requiring a separate "Recipes" button click.
+
+Fix: the recipe scan's completion callback wasn't being called for a
+profession with zero recipe scrolls to scan (e.g. Cooking), which could
+leave scan buttons permanently disabled once materials-then-recipes scans
+were chained together.
+
+
+v1.5
+----
+New: Recipe scanning rewritten to search by prefix (Plans:, Formula:,
+Pattern:, Schematic:, Recipe:) instead of one exact-name Auction House query
+per scroll. A single prefix search pages through every matching result at
+once, cutting a 50+ query scan down to 1-2 queries for most professions.
+
+
+v1.4
+----
+New: "Scan All Professions" button, chaining a materials-then-recipes scan
+for every enabled profession in sequence, instead of scanning each one by
+hand.
+
+
+v1.3
+----
+New: "requiresScan" recipe status. A recipe confirmed to be genuinely real
+and tradeable on the Auction House, but with no reliable fixed price to fall
+back on, is now only usable by the route calculator once its scroll has
+actually been scanned -- no guessed estimate is used in the meantime, so the
+calculator can never recommend something that turns out to be unavailable.
+
+
+v1.2
+----
+New: Recipe exclusion mechanism. Recipes that are extreme cost outliers (far
+more expensive than any comparable recipe at a similar skill level) can now
+be flagged as excluded from route consideration without deleting their
+underlying data -- fully reversible, and still usable as a make-vs-buy
+material source for other recipes if genuinely needed.
+
+
+v1.1
+----
+New: Cross-profession recipe lookup. Previously, if a recipe needed another
+profession's crafted item as a reagent (e.g. Enchanting's Runed Arcanite Rod
+needing Blacksmithing's Arcanite Rod), the calculator had no way to price
+that item at all. It now correctly resolves the cost by crafting it via the
+other profession's own recipe when nothing local matches.
+
+
+v1.0
+----
+Initial versioned release. At this point CraftRoute already had:
+  - Full recipe and skill-threshold data for all 8 professions
+  - Live Auction House price scanning, independent of aux-addon
+  - The cost-optimal 1-300 route calculator (skill-up probability model,
+    make-vs-buy reagent costing, recipe learn-cost handling)
+  - The Auction House UI tab with per-profession scan buttons
+  - The scrollable report window
+  - Sell-back credit recommendations (AH vs vendor) for leftover crafted
+    items
 
 ## The Algorithm 
 
