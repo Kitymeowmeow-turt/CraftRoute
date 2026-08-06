@@ -1,257 +1,120 @@
 # CraftRoute
+Addon for OctoWow
 
-**Version: v2.9.2**
+CraftRoute is a OctoWow addon that calculates the cheapest possible route to level any of the game's 9 crafting professions (Alchemy, Blacksmithing, Cooking, Enchanting, Engineering, Jewelcrafting, Leatherworking, Survival, Tailoring) from any level to any other level, using real, live Auction House prices rather than guesses.
 
-A Turtle WoW addon that calculates the cheapest 1→300 leveling route for a
-profession, using live Auction House prices scanned by CraftRoute itself
-(no other addon required — **aux-addon** is supported as an optional
-fallback, not a dependency).
+The core problem it solves: leveling a profession efficiently means knowing, at every single skill point, which recipe is actually cheapest to craft right now — not which one a guide from years ago said was cheapest, and not which one looks cheap until you learn that its 3rd ingredient is 250% over the typical price. CraftRoute answers that by scanning the AH itself, storing every single relevant post for the profession in question, and calculating from scratch.
 
-<!--
-  Screenshot: the CraftRoute tab at the Auction House, mid-scan (progress
-  bar visible, a couple of profession rows showing).
-  ![CraftRoute scan window](./screenshots/scan-window.png)
--->
+It covers all 9 professions (Alchemy, Blacksmithing, Cooking, Enchanting, Engineering, Jewelcrafting, Leatherworking, Survival, Tailoring), with every recipe's thresholds, reagents, and learn-source individually verified from the OctoWow database rather than assumed — and 856 vendor sell prices and 170 vendor buy prices confirmed the same way, not estimated.
 
-<!--
-  Screenshot: a full generated report — the guide comparison, tools list,
-  total cost line, and a chunk of the step-by-step breakdown.
-  ![CraftRoute report window](./screenshots/report-window.png)
--->
+## Use
 
----
+I'd like to show you in game screenshots, but I'm wary of getting targeted over showing any game assets whatsoever, so I'm going to describe using it and provide a copy and pasted report.
 
-## What it does
-
-Point CraftRoute at a profession and a skill range, and it works out — from
-real, currently-scanned Auction House prices, not static estimates — which
-recipe to craft at every single skill point from 1 to 300, in what
-quantity, to reach 300 as cheaply as possible. Not just "level with these
-recipes in this order" — it re-derives the actual cheapest choice at every
-point, accounting for:
-
-- **Real reagent depletion.** The Auction House doesn't have infinite cheap
-  stock — CraftRoute buys the cheapest listings first and prices the rest
-  at what's actually left, not a flat average.
-- **Make-vs-buy for craftable reagents.** If a reagent is itself craftable
-  and that's cheaper than the AH price, CraftRoute recommends crafting it
-  instead — recursively, and cross-profession where that's a real
-  possibility (a small, explicit allowlist, not a blanket assumption).
-- **Byproduct credit.** Every craft attempt produces the item regardless of
-  whether it grants a skill-up. If a recipe you're already leveling with
-  happens to produce more than the route strictly needs at that point, and
-  something *later* in the route needs that same item, CraftRoute credits
-  the surplus instead of pricing a second, separate purchase.
-- **Extending a recipe's own range when it's genuinely cheaper.** If
-  stretching a recipe a little further than its "natural" stopping point
-  would cover a later reagent need for free (or close to it), CraftRoute
-  checks whether that actually beats the alternative — a real, recomputed
-  cost comparison, not a guess.
-- **Sell-back.** Leftover crafted items (the inevitable surplus from
-  probabilistic skill-ups) get priced for resale — vendor by default,
-  Auction House too if you enable it and it's worth enough more — and
-  credited against the total.
-- **Guide comparison.** CraftRoute's own optimized route gets priced
-  head-to-head against static community leveling guides, using the exact
-  same real-cost math for both, and shows you whichever one is actually
-  cheaper.
-
----
-
-## Recent updates
-
-*(Newest first — full history in [CHANGELOG.txt](./CHANGELOG.txt))*
-
-- **v2.9** — New: custom insertions — a specific quantity of a specific
-  recipe, forced into the route at a specific skill point, for items
-  wanted for personal reasons rather than pure cost optimization.
-- **v2.8** — Engineering's own tools (Arclight Spanner, Gyromatic
-  Micro-Adjustor) now get inserted unconditionally at their earliest
-  craftable point, like Enchanting's required rods always have — and
-  after any mandatory item gets inserted, the full optimization cascade
-  runs again to account for its own reagent needs.
-- **v2.7.1** — Survival now uses its own report bands (1-75/75-150/
-  150-225/225-300) instead of the standard split — its recipe
-  thresholds cluster much more evenly across the full range.
-- **v2.7** — New: a recipe that's never chosen as a route step, but is
-  needed later as a reagent, no longer automatically wastes its own
-  skill-up window — if there's a real opportunity earlier in the route,
-  CraftRoute inserts it there instead of flat-crafting it for zero
-  skill value.
-- **v2.6.8** — Excluded Thorium Spurs from Blacksmithing.
-- **v2.6.7** — "Scan All Professions" now does one combined, deduplicated
-  scan across every profession instead of scanning each one separately —
-  faster, and nothing gets scanned twice just because two professions
-  share a reagent.
-- **v2.6.4 – v2.6.6** — Fixed a real discrepancy between the report's
-  "Total AH cost" and its own guide-comparison total for the same route —
-  three separate contributing bugs found and fixed in turn (a
-  band-splitting rounding issue, a byproduct-credit scope issue, and a
-  missing training-cost addition).
-- **v2.6** — New: "trimming" pass. A recipe that gets extra crafts tacked
-  on to cover a later reagent need was always priced as if those extra
-  crafts had zero skill-up value — only true if the recipe had genuinely
-  hit its own skill cap already. If it hadn't, that skill was real and
-  free; this pass collects it and shrinks whatever comes next in the
-  route accordingly.
-- **v2.5.2** — Skinning Knife (Survival) confirmed as a vendor-buyable
-  reagent.
-- **v2.5** — New: Survival is enabled! All 9 professions now available.
-- **v2.4.6** — Sell-back re-enabled, now backed by a real, user-verified
-  vendor sell-price table (856 items) instead of an unreliable live
-  lookup.
-- **v2.4** — New: reports now show a separate shopping list for each skill
-  band, placed right above that band's step-by-step section, instead of
-  one combined list at the very end.
-- **v2.3** — New: Jewelcrafting is enabled.
-- **v2.2** — New: Cooking is enabled.
-
----
-
-## Requirements
-
-- **aux-addon** ([github.com/shirsig/aux-addon-vanilla](https://github.com/shirsig/aux-addon-vanilla))
-  is optional. CraftRoute has its own independent Auction House scanner and
-  doesn't need aux-addon to function — it's only used as a name→item-ID
-  lookup for a small number of internal, non-pricing purposes.
-
-## Installation
-
-1. Copy the `CraftRoute` folder into `Interface/AddOns/`
-2. Make sure `CraftRoute` is enabled at the character-select AddOns screen.
-
-## Usage
-
-### 1. Scan reagents and recipes at the Auction House
-
-Open the Auction House and click the new **CraftRoute** tab (added next to
-Browse/Bid/Auctions). Each of the 9 professions gets its own row:
-
-- **The profession name** (e.g. "Blacksmithing") — scans every reagent it
-  needs, one at a time, then automatically continues into scanning that
-  profession's own recipe scrolls (Plans:/Pattern:/Schematic:/Formula:/
-  Recipe:/Outline:) by prefix — no separate click needed.
-- **Two number boxes** next to each profession, defaulting to 1 and 300 —
-  editable before clicking either the profession button or Create
-  CraftRoute. Setting a higher starting skill also makes the materials
-  scan skip reagents that are only needed by recipes already entirely
-  grey at that skill, so a partial-range scan is genuinely faster.
-- **Create CraftRoute** button — runs the calculation directly using
-  whatever's in the two number boxes. Equivalent to
-  `/craftroute <profession> <start box> <target box>`.
-- **Scan All Professions** button — one combined, deduplicated scan
-  across every enabled profession (materials first, then recipe scrolls),
-  instead of clicking through each profession by hand.
-- **Sell extra crafts back to AH if [X]% above vendor price** checkbox —
-  unchecked, leftover crafted items are priced at their vendor sell value
-  only. Checked, CraftRoute also scans each craftable item's own market
-  price, and recommends AH sale instead of vendoring whenever it's worth
-  enough more (the percentage threshold is editable).
-
-A progress bar shows what's currently being scanned either way.
-
-### 2. Calculate the route
+Using CraftRoutes for non-gnomes is simple, you go to the auction house, scan by hitting the button with the name of the profession, hit the create route button. The **copy and pastable report** (Ctrl+A Ctrl+C) you receive has a cost breakdown with comparison to the total cost breakdown of the static guide website many use, wow-professions. Below is the text you would see in game when you generate a report without selling to auction house checkbox enabled.
 
 ```
-/craftroute blacksmithing
+Alchemy -- cheapest 1 to 300 route  [CraftRoute (optimized)]
+
+Guide comparisons (each priced with real AH data, buying lowest first):
+  CraftRoute (optimized): 21g 90s 59c  <- cheapest, shown below
+  Wow-Professions.com: 50g 52s 70c
+
+Total AH cost (actual scanned listings, cheapest first): 21g 90s 59c
+  includes one-time recipe/training costs: 6g 20s 44c
+  Returned money after selling crafts back to vendor: -5g 45s 31c
+Total cost after vendoring: 16g 45s 28c
+  Note: Trainer training costs above are rough guesses at the threshholds 1-100, 100-200, and 200-300.
+
+-- Step-by-step --
+
+1-50 Shopping list
+  49x Empty Vial  (0g 1s 96c -- 0 from AH, 49 from vendor)
+  41x Peacebloom  (0g 7s 22c)
+  57x Silverleaf  (0g 12s 27c)
+
+[1-50]
+  [1-9] Elixir of Minor Defense  x8  (0g 4s 27c) +0g 2s 0c~ Trainer
+  [9-50] Minor Healing Potion  x41  (0g 21s 57c) +0g 2s 0c~ Trainer
+
+50-125 Shopping list
+  21x Bruiseweed  (0g 9s 66c)
+  78x Earthroot  (0g 21s 76c)
+  91x Empty Vial  (0g 3s 64c -- 0 from AH, 91 from vendor)
+  20x Mageroyal  (0g 3s 87c)
+  50x Peacebloom  (0g 13s 11c)
+  31x Silverleaf  (0g 9s 17c)
+  21x Swiftthistle  (0g 30s 59c)
+
+[50-125]
+  [50-60] Minor Healing Potion  x11  (0g 5s 26c) Trainer
+  [60-77] Minor Mana Potion  x20  (0g 12s 1c) +0g 2s 0c~ Trainer
+  [77-104] Elixir of Minor Fortitude  x39  (0g 35s 75c) +0g 2s 0c~ Trainer
+  [104-125] Holy Protection Potion  x21  (0g 45s 24c) +0g 5s 0c~ Trainer
+
+125-200 Shopping list
+  30x Bruiseweed  (0g 13s 80c)
+  37x Earthroot  (0g 10s 80c)
+  27x Empty Vial  (0g 1s 8c -- 0 from AH, 27 from vendor)
+  26x Firefin Snapper  (0g 26s 0c)
+  37x Kingsblood  (0g 41s 98c)
+  53x Leaded Vial  (0g 21s 20c -- 0 from AH, 53 from vendor)
+  16x Liferoot  (0g 23s 19c)
+  14x Swiftthistle  (0g 20s 54c)
+
+[125-200]
+  [125-138] Holy Protection Potion  x14  (0g 28s 0c) Trainer
+  [138-151] Fire Oil  x13  (0g 31s 52c) +0g 5s 0c~ Trainer
+  [151-186] Elixir of Ogre's Strength  x37  (0g 71s 91c) +0g 4s 97c Recipe
+  [186-200] Mighty Troll's Blood Potion  x16  (0g 39s 65c) +0g 5s 0c~ Trainer
+
+200-300 Shopping list
+  64x Arthas' Tears  (1g 70s 24c)
+  20x Bruiseweed  (0g 9s 38c)
+  87x Crystal Vial  (4g 35s 0c -- 0 from AH, 87 from vendor)
+  13x Dreamfoil  (1g 66s 44c)
+  10x Elemental Water  (0g 46s 78c)
+  46x Fadeleaf  (0g 61s 6c)
+  9x Goldthorn  (0g 15s 96c)
+  10x Icecap  (0g 54s 87c)
+  37x Khadgar's Whisker  (0g 58s 86c)
+  66x Leaded Vial  (0g 26s 40c -- 0 from AH, 66 from vendor)
+  20x Liferoot  (0g 29s 0c)
+  26x Plaguebloom  (2g 24s 32c)
+
+[200-300]
+  [200-217] Mighty Troll's Blood Potion  x20  (0g 48s 15c) Trainer
+  [217-240] Elixir of Detect Lesser Invisibility  x37  (1g 31s 77c) +0g 11s 48c Recipe
+  [240-244] Catseye Elixir  x9  (0g 57s 36c) +0g 27s 0c~ Trainer
+  [244-277] Elixir of Detect Undead  x64  (5g 12s 85c) +0g 27s 0c~ Trainer
+  [277-290] Mageblood Potion  x13  (4g 82s 76c) +0g 27s 0c~ Trainer
+  [290-300] Greater Frost Protection Potion  x10  (6g 51s 64c) +4g 99s 99c Recipe
+
+-- Sell off leftover crafted items --
+  9x catseye elixir  -> sell to vendor  (0g 1s 50c each, 0g 13s 50c total)
+  37x elixir of detect lesser invisibility  -> sell to vendor  (0g 1s 50c each, 0g 55s 50c total)
+  64x elixir of detect undead  -> sell to vendor  (0g 3s 0c each, 1g 92s 0c total)
+  8x elixir of minor defense  -> sell to vendor  (0g 0s 5c each, 0g 0s 40c total)
+  39x elixir of minor fortitude  -> sell to vendor  (0g 0s 15c each, 0g 5s 85c total)
+  37x elixir of ogre's strength  -> sell to vendor  (0g 0s 20c each, 0g 7s 40c total)
+  13x fire oil  -> sell to vendor  (0g 0s 12c each, 0g 1s 56c total)
+  10x greater frost protection potion  -> sell to vendor  (0g 7s 50c each, 0g 75s 0c total)
+  35x holy protection potion  -> sell to vendor  (0g 0s 62c each, 0g 21s 70c total)
+  13x mageblood potion  -> sell to vendor  (0g 10s 0c each, 1g 30s 0c total)
+  36x mighty troll's blood potion  -> sell to vendor  (0g 1s 5c each, 0g 37s 80c total)
+  52x minor healing potion  -> sell to vendor  (0g 0s 5c each, 0g 2s 60c total)
+  20x minor mana potion  -> sell to vendor  (0g 0s 10c each, 0g 2s 0c total)
+...
 ```
 
-(Or click **Create CraftRoute** on that profession's row in the AH tab.)
+## The Algorithm 
 
-Opens a report window with:
+<img width="2356" height="3900" alt="CraftRoute Algorithm Flowchart-selection - Copy" src="https://github.com/user-attachments/assets/e29eaedb-738e-4df4-877d-a56ddd4f6931" />
 
-- A **guide comparison** — CraftRoute's own optimized route priced
-  head-to-head against any static community guides available for that
-  profession, showing whichever is actually cheaper
-- The **tools you'll need** — one-time, not consumed, with real vendor/AH
-  sourcing info
-- The **true AH cost** — what you'd actually pay, buying the cheapest
-  scanned listings first, up to the real quantity each reagent needs
-- A **step-by-step list** of which recipe to craft at which skill range
-  and how many times, grouped into 1-50 / 50-125 / 125-200 / 200-300
-  sections, each with its own shopping list directly above it
-- **Sell-back credit** for leftover crafted items, and a final net total
-- A clear warning if the Auction House doesn't currently have enough of
-  something scanned, so you know before you commit rather than finding
-  out mid-grind
+### Stage 2 Expanded
+For this last picture it is the stage 2 loop from above expanded. What occurs here is a production has been extended because its cheaper to make, needed later, and you may as well get skillups for it. The problem is that now we need to do a trimming of the recipe that comes after the one where we chose to make more.
 
-### Other commands
+<img width="4524" height="1686" alt="CraftRoute Algorithm Flowchart-selection - Copy (2)" src="https://github.com/user-attachments/assets/bd7c71cc-fbe3-414c-a07b-2d64213a3a39" />
 
-```
-/craftroute list                          -- show which professions have data loaded
-/craftroute <profession> <target>         -- calculate 1 up to a specific skill cap
-/craftroute <profession> <start> <target> -- calculate between any two skill levels
-                                             (e.g. already at 150, just want 150-300)
-```
 
----
-
-## How the math works
-
-Recipes have four skill thresholds — orange / yellow / green / grey —
-sourced from Turtle WoW's own in-game data, not vanilla defaults. At a
-given skill level, the chance of a skill-up on a single craft is:
-
-- **Orange** (skill < yellow): 100%
-- **Yellow band**: `(grey - skill) / (grey - yellow)`
-- **Green band**: `0.5 * (grey - skill) / (grey - green)`
-- **Grey** (skill ≥ grey): 0%
-
-Expected number of craft attempts to gain one skill point = `1 / chance`.
-At every skill point from 1→300, CraftRoute's main pass picks whichever
-available recipe minimizes `reagent cost / chance` — then several
-additional passes look for ways to do better than that greedy choice alone
-would find: extending a recipe's own range to cover a later need for free,
-catching reagent shortfalls that fall past a recipe's own skill cap, and
-recovering real skill-up value that would otherwise get priced as zero.
-
-**Note on cost accuracy:** the per-step dollar figures in the step-by-step
-breakdown use a flat "cheapest current listing" price per reagent — this is
-what decides *which* recipe wins at each skill point, and it's a reasonable
-approximation since the choice of recipe rarely changes based on exact AH
-depletion at the margin. The **shopping lists and final total AH cost**,
-however, are fully depletion-aware: they sum the actual cheapest scanned
-listings up to the real quantity needed for the whole route (with AH
-depletion and byproduct credit both carried continuously across every skill
-band, not reset at each section), and flag any reagent where scanned supply
-falls short. That final number is the one to trust for "what will this
-actually cost me."
-
----
-
-## Data status (as of this build)
-
-All 9 professions are enabled. Recipe counts below exclude anything marked
-`excluded=true` (cost outliers, unresolvable data, or specifically flagged
-as not worth recommending) — those recipes still exist in the data as
-reagent sources, they're just never chosen as a route step.
-
-| Profession | Recipes | Trainer-taught | AH/vendor scroll | Quest/boss |
-|---|---:|---:|---:|---:|
-| Alchemy | 89 | 55 | 34 | — |
-| Blacksmithing | 169 | 94 | 69 | 6 |
-| Cooking | 51 | 9 | 42 | — |
-| Enchanting | 55 | 39 | 16 | — |
-| Engineering | 121 | 64 | 57 | — |
-| Jewelcrafting | 164 | 80 | 72 | 12 |
-| Leatherworking | 109 | 54 | 55 | — |
-| Survival | 83 | 80 | 1 | 2 |
-| Tailoring | 150 | 90 | 60 | — |
-
-Vendor pricing: **170** confirmed buy prices, **856** confirmed sell-back
-prices, all directly verified rather than estimated.
-
-## Adding a new profession
-
-Add a `data_<profession>.lua` file following the same format as the
-existing ones (see any `data_*.lua` for the exact shape), add it to
-`CraftRoute.toc`, and it's automatically available via
-`/craftroute <profession>`. The one hard requirement: every recipe needs
-its **orange/yellow/green/grey** thresholds from actual in-game data —
-there's no way around getting those, they aren't in any reagent database.
-
-## For developers
-
-See `DEVNOTES.md` for implementation notes, algorithm background, and a
-detailed history of what's been found and fixed along the way, and
-`CODEMAP.md` for a function-level map of the codebase.
+## **FAQ** In progress
