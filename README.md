@@ -119,4 +119,4 @@ For this last picture it is the stage 2 loop from above expanded. What occurs he
 
 ## **FAQ** In progress
 # **Why does blacksmithing stop at level 235, wasn't the whole point to get around bottlenecks?**
-    I wish I could squeeze you past the need for Iron, and everyone leveling their profession right now, but I can't because some things are impossible, like being a blacksmith without metal. The best route here would be to finish that last step it told you, then when there is more iron on the auction house change the bracket in the AH tab or type /craftroute 235 300 to start from there.
+   I wish I could squeeze you past the need for Iron, and everyone leveling their profession right now, but I can't because some things are impossible, like being a blacksmith without metal. The best route here would be to finish that last step it told you, then when there is more iron on the auction house change the bracket in the AH tab or type /craftroute 235 300 to start from there.
