@@ -107,33 +107,6 @@ Total cost after vendoring: 16g 45s 28c
 ...
 ```
 ## Version History
-CraftRoute Changelog
-=====================
-
-Note: version tracking wasn't kept up consistently for a stretch of
-development -- v1.0 sat unchanged through several real feature additions and
-a bug fix before anyone noticed. The entries below are reconstructed after
-the fact and assigned to version numbers as if tracking had been kept up
-throughout, using standard semantic versioning: MAJOR.MINOR.PATCH, where
-MINOR bumps mean new functionality and PATCH bumps mean bug fixes, both
-backward-compatible. Pure UI wording/positioning tweaks and profession data
-corrections (vendor prices, exclusions, threshold fixes, etc.) aren't broken
-out as their own version entries, consistent with how versioning was already
-being applied once it started being tracked deliberately.
-
-Correction: the stretch from what's now v2.2 through v2.4.14 (previously
-tracked as a single unbroken v2.1.x patch line) drifted from that standard --
-whole professions becoming available (Cooking, Jewelcrafting) and a real new
-report feature (per-band shopping lists) were bumped as patches instead of
-minor versions. Renumbered to correct this; the entries' content is
-unchanged, only the version labels and this file's own formatting moved.
-
-Ordering: entries are newest-first from here on (this file was reversed
-once, in full, to establish that -- no entry's own content changed, only
-the order they appear in). New entries get added directly below this note,
-not appended to the end.
-
-
 v2.10
 -----
 New: no more invisible crafts. A recipe needed as a reagent could
