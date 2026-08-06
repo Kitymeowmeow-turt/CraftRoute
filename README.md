@@ -8,15 +8,16 @@ The core problem it solves: leveling a profession efficiently means knowing, at 
 It covers all 9 professions (Alchemy, Blacksmithing, Cooking, Enchanting, Engineering, Jewelcrafting, Leatherworking, Survival, Tailoring), with every recipe's thresholds, reagents, and learn-source individually verified from the OctoWow database rather than assumed — and 856 vendor sell prices and 170 vendor buy prices confirmed the same way, not estimated.
 
 I haven't seen CraftRoute lose to Wow-professions in over a week, only leaving it in for now to re-assure players that this is better **BUT** I know it is possible for CraftRoute to lose when there are low amounts of materials. (example: If there are no iron and thorium bars on the auction house then Wow-professions will look cheap, but be 100% impossible.)
-Alchemy: CraftRoute 28.4g Wow-professions 58.4g
-Blacksmithing: CraftRoute 144g Wow-professions 177g
-Cooking: 2.2g
-Enchanting: CraftRoute 138.1g Wow-professions 370g (Arcanite rod)
-Engineering: CraftRoute 41.5g Wow-professions 71.5g
-Jewelcrafting: 175.6g
-Leatherworking: CraftRoute 125.1g Wow-professions 156.2g
-Survival: 56.3g
-Tailoring: CraftRoute 85.5g Wow-professions 209.5g
+
+  Alchemy: CraftRoute 28.4g Wow-professions 58.4g
+  Blacksmithing: CraftRoute 144g Wow-professions 177g
+  Cooking: 2.2g
+  Enchanting: CraftRoute 138.1g Wow-professions 370g (Arcanite rod)
+  Engineering: CraftRoute 41.5g Wow-professions 71.5g
+  Jewelcrafting: 175.6g
+  Leatherworking: CraftRoute 125.1g Wow-professions 156.2g
+  Survival: 56.3g
+  Tailoring: CraftRoute 85.5g Wow-professions 209.5g
 
 ## Use
 
