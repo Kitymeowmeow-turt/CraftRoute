@@ -132,7 +132,7 @@ local function build_panel()
 
 	local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	title:SetPoint("TOP", panel, "TOP", 0, -60)
-	title:SetText("CraftRoute -- v2.10 -- Scan Reagents")
+	title:SetText("CraftRoute -- v2.11 -- Scan Reagents")
 
 	local subtitle = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 	subtitle:SetPoint("TOP", title, "BOTTOM", 0, -8)

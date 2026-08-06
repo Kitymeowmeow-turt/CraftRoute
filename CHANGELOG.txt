@@ -25,6 +25,18 @@ the order they appear in). New entries get added directly below this note,
 not appended to the end.
 
 
+v2.11
+-----
+Fix: the guide comparison no longer auto-switches to whichever total
+looks lower. A static guide isn't checked against what's actually
+available to buy the way CraftRoute's own route is, so a lower guide
+total could mean an unachievable route rather than a genuinely cheaper
+one -- especially under a real reagent shortage. CraftRoute's own route
+is always the one shown now; every candidate's total is still compared
+and displayed, with a note explaining why a lower guide total isn't
+automatically trustworthy.
+
+
 v2.10
 -----
 New: no more invisible crafts. A recipe needed as a reagent could

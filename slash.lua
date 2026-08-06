@@ -159,10 +159,22 @@ local function build_report(professionKey, total_cost, steps, missing, reached, 
 
 	if candidates and getn(candidates) > 1 then
 		table.insert(lines, "|cffffcc00Guide comparisons (each priced with real AH data, buying lowest first):|r")
+		local anyGuideLooksLower = false
 		for i = 1, getn(candidates) do
 			local c = candidates[i]
-			local marker = (c == chosen) and "  <- cheapest, shown below" or ""
+			local marker = ""
+			if c == chosen then
+				marker = "  <- shown below"
+			elseif c.total < chosen.total then
+				marker = "  <- lower total, see note below"
+				anyGuideLooksLower = true
+			end
 			table.insert(lines, "  " .. c.label .. ": " .. CraftRoute.MoneyString(c.total) .. marker)
+		end
+		if anyGuideLooksLower then
+			table.insert(lines, "|cffffcc00Note: a guide's lower total doesn't always mean a cheaper route --|r")
+			table.insert(lines, "|cffffcc00it isn't checked against what's actually available to buy, unlike|r")
+			table.insert(lines, "|cffffcc00the route below, which never picks something it can't source.|r")
 		end
 		table.insert(lines, "")
 	end
@@ -452,12 +464,20 @@ SlashCmdList["CRAFTROUTE"] = function(msg)
 		end
 	end
 
+	-- Always show CraftRoute's own route, never auto-switch to a guide
+	-- just because its total comes out lower. CraftRoute's main loop
+	-- refuses to choose a recipe it can't actually source (see
+	-- depletion_aware_reagent_cost_detailed's achievability check) --
+	-- a static guide has no such check at all, it's a fixed list
+	-- regardless of what's scanned. A guide total that comes out lower
+	-- can mean the guide is genuinely cheaper, or it can mean the guide
+	-- is quietly relying on more of some scarce reagent than actually
+	-- exists, priced at a scarcity-penalty estimate that still
+	-- understates the real cost of something that's not really
+	-- obtainable in that quantity at all. The comparison itself is
+	-- still shown in full below -- this only decides which one gets
+	-- used as the actual displayed route.
 	local chosen = candidates[1]
-	for i = 2, getn(candidates) do
-		if candidates[i].total < chosen.total then
-			chosen = candidates[i]
-		end
-	end
 
 	local report = build_report(prof, chosen.total_cost, chosen.steps, chosen.missing, chosen.reached,
 		chosen.stuckAt, chosen.total_learn_cost, chosen.any_learn_cost_estimated, start, candidates, chosen)
