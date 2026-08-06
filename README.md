@@ -9,23 +9,25 @@ It covers all 9 professions (Alchemy, Blacksmithing, Cooking, Enchanting, Engine
 
 I haven't seen CraftRoute lose to Wow-professions in over a week, only leaving it in for now to re-assure players that this is better **BUT** I know it is possible for CraftRoute to lose when there are low amounts of materials. (example: If there are no iron and thorium bars on the auction house then Wow-professions will look cheap, but be 100% impossible.)
 
-Alchemy: CraftRoute 28.4g Wow-professions 58.4g
+Scan data from 5/8/2026
 
-Blacksmithing: CraftRoute 144g Wow-professions 177g
+Alchemy: **CraftRoute 28.4g** Wow-professions 58.4g
 
-Cooking: 2.2g
+Blacksmithing: **CraftRoute 144g** Wow-professions 177g
 
-Enchanting: CraftRoute 138.1g Wow-professions 370g (Arcanite rod)
+Cooking: **2.2g**
 
-Engineering: CraftRoute 41.5g Wow-professions 71.5g
+Enchanting: **CraftRoute 138.1g** Wow-professions 370g (Arcanite rod)
 
-Jewelcrafting: 175.6g
+Engineering: **CraftRoute 41.5g** Wow-professions 71.5g
 
-Leatherworking: CraftRoute 125.1g Wow-professions 156.2g
+Jewelcrafting: **175.6g**
 
-Survival: 56.3g
+Leatherworking: **CraftRoute 125.1g** Wow-professions 156.2g
 
-Tailoring: CraftRoute 85.5g Wow-professions 209.5g
+Survival: **56.3g**
+
+Tailoring: **CraftRoute 85.5g** Wow-professions 209.5g
 
 
 ## Use
