@@ -25,6 +25,23 @@ the order they appear in). New entries get added directly below this note,
 not appended to the end.
 
 
+v2.10
+-----
+New: no more invisible crafts. A recipe needed as a reagent could
+previously get its shortfall covered silently -- crafted from raw
+materials as part of a DIFFERENT recipe's cost, with no route step of
+its own, even when the exact same craft was available to show visibly
+at the exact same cost. The three extension/insertion passes now treat
+a real cost tie as a win for the visible option, so these get pulled
+onto their own step instead of staying hidden. Also fixed a real,
+previously-latent bug this exposed: trimming credited free skill by
+shrinking whatever came after an extension, but never extended the
+original step's own range to match, which could leave a real gap in
+the route. Added a safety net too -- if anything still resolves
+invisibly despite the fix, it now gets printed as its own "Also craft
+along the way" section rather than staying hidden.
+
+
 v2.9.2
 ------
 Survival custom insertions updated: Nutritious Rations reduced to 5
