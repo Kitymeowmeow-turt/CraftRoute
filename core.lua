@@ -511,6 +511,24 @@ end
 -- fallback), which defeats the entire point of this function.
 local SCARCITY_PENALTY_MULTIPLIER = 3
 
+-- Used by ApplyDownstreamExtensions/ApplyRecipeInsertion/
+-- ApplyPureProductionExtensions: a reagent shortfall these passes could
+-- visibly close is, whenever they decline to act, still being paid for
+-- somewhere -- either genuinely unaddressed (a real gap the shopping
+-- list will flag), or already being resolved invisibly by ShoppingList's
+-- own recursive craft-vs-buy expansion, at the exact same real cost,
+-- just folded into a DIFFERENT step's subtotal instead of shown as its
+-- own line. A strict "candidate must be cheaper" comparison can never
+-- tell these two cases apart from a cost-tie alone -- both look
+-- identical on price. Comparing with this small tolerance instead of a
+-- strict "<" means a real tie is treated as a win for the visible
+-- candidate, so the player is told about a craft that's happening
+-- either way, rather than it staying hidden purely because closing it
+-- visibly wasn't cheaper, only equal. Sized to absorb floating-point
+-- drift from repeated division in the depletion-aware costing, not to
+-- ever accept a candidate that's genuinely more expensive.
+local VISIBILITY_TIE_EPSILON = 0.01
+
 -- Same decision as depletion_aware_reagent_cost, but also reports which AH
 -- pool(s) the winning price actually draws from -- needed so pathConsumed
 -- can track the pool that's really being depleted. Without this, converting
@@ -1300,7 +1318,9 @@ function CraftRoute.ApplyDownstreamExtensions(professionKey, steps, total_cost, 
 					local baselineCost = shopping_list_true_cost(professionKey, baselineFull)
 					local extendedCostTrue = shopping_list_true_cost(professionKey, extendedFull)
 
-					if extendedCostTrue < baselineCost then
+					-- Accepts a cost TIE, not just a strict improvement --
+					-- see VISIBILITY_TIE_EPSILON's own comment.
+					if extendedCostTrue <= baselineCost + VISIBILITY_TIE_EPSILON then
 						table.insert(newSteps, mergedStep)
 						if leftoverStep then
 							table.insert(newSteps, leftoverStep)
@@ -1547,7 +1567,10 @@ function CraftRoute.ApplyRecipeInsertion(professionKey, steps, total_cost, recip
 									if newStepPlaced then
 										local baselineCost = shopping_list_true_cost(professionKey, currentSteps)
 										local candidateCost = shopping_list_true_cost(professionKey, candidateSteps)
-										if candidateCost < baselineCost then
+										-- Accepts a cost TIE, not just a strict
+										-- improvement -- see
+										-- VISIBILITY_TIE_EPSILON's own comment.
+										if candidateCost <= baselineCost + VISIBILITY_TIE_EPSILON then
 											currentSteps = candidateSteps
 											improved = true
 										end
@@ -1686,6 +1709,13 @@ function CraftRoute.ApplyPureProductionExtensions(professionKey, steps, total_co
 							-- this step's extra production against what
 							-- other steps need to buy, with no manual
 							-- bookkeeping required here.
+							--
+							-- Accepts a cost TIE, not just a strict
+							-- improvement -- see VISIBILITY_TIE_EPSILON's
+							-- own comment for why a tie specifically means
+							-- this shortfall is already being paid for
+							-- invisibly, and closing it visibly costs
+							-- nothing extra.
 							local extendedSteps = {}
 							for k = 1, getn(newSteps) do
 								table.insert(extendedSteps, newSteps[k])
@@ -1695,7 +1725,7 @@ function CraftRoute.ApplyPureProductionExtensions(professionKey, steps, total_co
 							local baselineCost = shopping_list_true_cost(professionKey, newSteps)
 							local extendedCost = shopping_list_true_cost(professionKey, extendedSteps)
 
-							if extendedCost < baselineCost then
+							if extendedCost <= baselineCost + VISIBILITY_TIE_EPSILON then
 								newSteps = extendedSteps
 								improved = true
 								-- Record this specific extension (which step,
@@ -1767,7 +1797,16 @@ function CraftRoute.ApplyTrimming(professionKey, steps, extensions, total_cost, 
 					end
 				end
 				if idx then
+					-- The credited units already taught real skill up to
+					-- landing -- step.toSkill has to move to match, or
+					-- whatever gets shrunk/removed below leaves a gap
+					-- between this step's old (too-short) range and
+					-- wherever the next one now starts. expectedCrafts/
+					-- subtotal are already correct as-is (PPE already
+					-- added extraUnits to both before this pass runs) --
+					-- only the displayed range was stale.
 					local remaining = landing - step.toSkill
+					step.toSkill = landing
 					local k = idx + 1
 					while k <= getn(newSteps) and remaining > 0 do
 						local victim = newSteps[k]
@@ -2121,7 +2160,7 @@ end
 -- cheaper to craft this item than buy it, expands into its own reagents
 -- instead (recursively, also checking their own supply); otherwise adds it
 -- directly as something to buy.
-local function expand_shopping_need(name, itemId, qty, recipeLookup, cache, totals, order, visiting, supply)
+local function expand_shopping_need(name, itemId, qty, recipeLookup, cache, totals, order, visiting, supply, hiddenCrafts, hiddenOrder)
 	if name and supply then
 		local skey = strlower(name)
 		local avail = supply[skey]
@@ -2144,17 +2183,30 @@ local function expand_shopping_need(name, itemId, qty, recipeLookup, cache, tota
 		-- total assumed another); this keeps them structurally the same call.
 		local _, source, detail = get_item_cost_detailed(name, itemId, recipeLookup, cache, {})
 		if source == "craft" and detail then
+			-- Safety net for VISIBILITY_TIE_EPSILON above: that fix closes
+			-- the visibility gap for every case a real cost tie can catch,
+			-- but "every case a tie can catch" isn't a proven guarantee for
+			-- every possible route shape -- if a craft-vs-buy decision ever
+			-- still lands here despite that, record it so the report can
+			-- surface it explicitly instead of letting it stay invisible.
+			if hiddenCrafts then
+				if not hiddenCrafts[name] then
+					hiddenCrafts[name] = 0
+					table.insert(hiddenOrder, name)
+				end
+				hiddenCrafts[name] = hiddenCrafts[name] + qty
+			end
 			visiting[key] = true
 			for i = 1, getn(detail.reagents) do
 				local sr = detail.reagents[i]
 				local srName, srItemId = CraftRoute.ResolveReagent(sr)
-				expand_shopping_need(srName, srItemId, sr.qty * qty, recipeLookup, cache, totals, order, visiting, supply)
+				expand_shopping_need(srName, srItemId, sr.qty * qty, recipeLookup, cache, totals, order, visiting, supply, hiddenCrafts, hiddenOrder)
 			end
 			visiting[key] = nil
 			return
 		elseif source == "convert" and detail then
 			visiting[key] = true
-			expand_shopping_need(detail, nil, qty * ESSENCE_CONVERSION_RATIO, recipeLookup, cache, totals, order, visiting, supply)
+			expand_shopping_need(detail, nil, qty * ESSENCE_CONVERSION_RATIO, recipeLookup, cache, totals, order, visiting, supply, hiddenCrafts, hiddenOrder)
 			visiting[key] = nil
 			return
 		end
@@ -2296,6 +2348,13 @@ function CraftRoute.ShoppingList(professionKey, steps, incomingSupply)
 	local cache = {}
 	local totals = {}
 	local order = {}
+	-- Safety net for VISIBILITY_TIE_EPSILON -- see expand_shopping_need's
+	-- own comment. Should come back empty in practice; a non-empty result
+	-- means a craft-vs-buy decision is still happening invisibly despite
+	-- the tie-breaking fix, worth surfacing rather than silently trusting
+	-- that fix caught everything.
+	local hiddenCrafts = {}
+	local hiddenOrder = {}
 
 	-- every craft attempt during a step produces 1 unit of that recipe's
 	-- own output, success or not -- this is the free byproduct pool.
@@ -2325,11 +2384,12 @@ function CraftRoute.ShoppingList(professionKey, steps, incomingSupply)
 		for j = 1, getn(recipe.reagents) do
 			local r = recipe.reagents[j]
 			local name, itemId = CraftRoute.ResolveReagent(r)
-			expand_shopping_need(name, itemId, r.qty * crafts, recipeLookup, cache, totals, order, {}, supply)
+			expand_shopping_need(name, itemId, r.qty * crafts, recipeLookup, cache, totals, order, {}, supply, hiddenCrafts, hiddenOrder)
 		end
 	end
 	table.sort(order)
-	return totals, order, supply
+	table.sort(hiddenOrder)
+	return totals, order, supply, hiddenCrafts, hiddenOrder
 end
 
 -- Professions whose crafted output has nothing physical to sell back to a
@@ -2448,9 +2508,13 @@ end
 -- couldn't credit a need in a later one, so the later band would price
 -- itself as if it had to buy that reagent fresh. Returns the updated
 -- supply as a 5th value for the same reason pathConsumed is returned.
+--
+-- Also returns hiddenCrafts/hiddenOrder (6th/7th values) -- see
+-- ShoppingList's own comment for what these are. Empty in the expected
+-- case; existing callers that only capture fewer values are unaffected.
 function CraftRoute.TrueShoppingCost(professionKey, steps, pathConsumed, incomingSupply)
 	pathConsumed = pathConsumed or {}
-	local totals, order, supply = CraftRoute.ShoppingList(professionKey, steps, incomingSupply)
+	local totals, order, supply, hiddenCrafts, hiddenOrder = CraftRoute.ShoppingList(professionKey, steps, incomingSupply)
 	local recipes = CraftRoute_Data[professionKey]
 	local recipeLookup = build_recipe_lookup(recipes)
 	local cache = {}
@@ -2518,5 +2582,5 @@ function CraftRoute.TrueShoppingCost(professionKey, steps, pathConsumed, incomin
 		table.insert(perReagent, {name = name, qty = qty, cost = cost, covered = covered, shortfall = shortfall, vendorCovered = vendorCovered, craftedCovered = craftedCovered})
 	end
 
-	return totalCost, perReagent, anyShortfall, pathConsumed, supply
+	return totalCost, perReagent, anyShortfall, pathConsumed, supply, hiddenCrafts, hiddenOrder
 end

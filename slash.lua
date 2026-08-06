@@ -228,14 +228,30 @@ local function build_report(professionKey, total_cost, steps, missing, reached, 
 	local trueCost = 0
 	local anyShortfall = false
 	local bandShopping = {}
+	-- Safety net for VISIBILITY_TIE_EPSILON (see core.lua) -- aggregated
+	-- across every band into one combined list for the whole route.
+	-- Expected to stay empty; see the "Also craft along the way" section
+	-- below for what happens if it isn't.
+	local allHiddenCrafts = {}
+	local allHiddenOrder = {}
 	for b = 1, getn(banded) do
 		local band = banded[b]
 		if getn(band.entries) > 0 then
-			local bandCost, bandPerReagent, bandShortfall
-			bandCost, bandPerReagent, bandShortfall, pathConsumed, supply = CraftRoute.TrueShoppingCost(professionKey, band.entries, pathConsumed, supply)
+			local bandCost, bandPerReagent, bandShortfall, bandHiddenCrafts, bandHiddenOrder
+			bandCost, bandPerReagent, bandShortfall, pathConsumed, supply, bandHiddenCrafts, bandHiddenOrder = CraftRoute.TrueShoppingCost(professionKey, band.entries, pathConsumed, supply)
 			trueCost = trueCost + bandCost
 			if bandShortfall then anyShortfall = true end
 			bandShopping[b] = bandPerReagent
+			if bandHiddenOrder then
+				for h = 1, getn(bandHiddenOrder) do
+					local hname = bandHiddenOrder[h]
+					if not allHiddenCrafts[hname] then
+						allHiddenCrafts[hname] = 0
+						table.insert(allHiddenOrder, hname)
+					end
+					allHiddenCrafts[hname] = allHiddenCrafts[hname] + bandHiddenCrafts[hname]
+				end
+			end
 		end
 	end
 	-- trueCost from the loop above is reagent-only (that's all
@@ -265,6 +281,18 @@ local function build_report(professionKey, total_cost, steps, missing, reached, 
 	end
 	if anyShortfall then
 		table.insert(lines, "|cffff4444Warning: the AH doesn't have enough of some reagents scanned -- see below.|r")
+	end
+	if getn(allHiddenOrder) > 0 then
+		-- Safety net firing: something is still being crafted invisibly
+		-- despite the tie-breaking fix in ApplyDownstreamExtensions/
+		-- ApplyRecipeInsertion/ApplyPureProductionExtensions. Surface it
+		-- explicitly rather than let the player discover it only by
+		-- running short on materials mid-route.
+		table.insert(lines, "|cffffcc00Also craft along the way (not shown as its own route step):|r")
+		for h = 1, getn(allHiddenOrder) do
+			local hname = allHiddenOrder[h]
+			table.insert(lines, string.format("  %dx %s", math.ceil(allHiddenCrafts[hname]), hname))
+		end
 	end
 	table.insert(lines, "")
 	table.insert(lines, "-- Step-by-step --")
