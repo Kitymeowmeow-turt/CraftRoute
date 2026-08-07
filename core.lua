@@ -1098,6 +1098,21 @@ function CraftRoute.CalculatePath(professionKey, targetSkill, startSkill)
 	-- around that, the same reasoning that already justified looping the
 	-- cascade on its own for trimming-created shortfalls, just triggered
 	-- by a different kind of step-list change this time.
+	--
+	-- That follow-up cascade has no concept of "this step is mandatory,
+	-- don't touch it" -- ApplyDownstreamExtensions/ApplyRecipeInsertion
+	-- judge everything purely on cost, so if extending some OTHER recipe
+	-- back over a mandatory item's one-point slot looks cheaper by that
+	-- same metric, the cascade will happily do it, silently removing the
+	-- mandatory item from the route entirely (found via a real user
+	-- report -- Arclight Spanner missing from a route despite being
+	-- unconditional -- see DEVNOTES §5). Re-running mandatory/custom
+	-- insertion once more afterward catches and reverses that: if the
+	-- item's still there, this is a no-op (the "already present" check
+	-- short-circuits); if the cascade removed it, it goes back in. No
+	-- third cascade run after this -- re-optimizing around a
+	-- guaranteed-present item is worth doing, but re-running the exact
+	-- pass that just removed it risks silently removing it again.
 	if not stuckAt then
 		local anyMandatoryChange = false
 
@@ -1117,6 +1132,18 @@ function CraftRoute.CalculatePath(professionKey, targetSkill, startSkill)
 
 		if anyMandatoryChange and getn(steps) > 1 then
 			steps, total_cost = run_extension_cascade(professionKey, steps, total_cost, targetSkill, recipeLookup, costCache)
+
+			local restoredSteps, restoredMandatory = CraftRoute.ApplyMandatoryCrafts(
+				professionKey, steps, startSkill, targetSkill, recipeLookup, costCache)
+			if restoredMandatory then
+				steps = restoredSteps
+			end
+
+			local restoredSteps2, restoredCustom = CraftRoute.ApplyCustomInsertions(
+				professionKey, steps, startSkill, targetSkill, recipeLookup, costCache)
+			if restoredCustom then
+				steps = restoredSteps2
+			end
 		end
 	end
 
