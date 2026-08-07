@@ -131,6 +131,11 @@ Total cost after vendoring: 16g 45s 28c
 ```
 ## Version History
 
+v2.11.2
+-------
+Engineering custom insertions: Solid Dynamite and Big Iron Bomb reduced
+from 20 to 10 each.
+
 v2.11.1
 -------
 Fix: a mandatory item (Enchanting's rods, Engineering's Arclight Spanner/
