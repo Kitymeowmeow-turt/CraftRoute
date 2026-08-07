@@ -25,6 +25,18 @@ the order they appear in). New entries get added directly below this note,
 not appended to the end.
 
 
+v2.11.1
+-------
+Fix: a mandatory item (Enchanting's rods, Engineering's Arclight Spanner/
+Gyromatic Micro-Adjustor) could get silently removed from the route by
+the optimization pass that runs right after it's inserted -- that pass
+has no way to know the item is required, and could extend a different
+recipe back over its slot if that looked cheaper. Found from a real
+report of Arclight Spanner missing entirely from an Engineering route.
+Fixed by re-checking after that pass and re-inserting anything it
+removed.
+
+
 v2.11
 -----
 Fix: the guide comparison no longer auto-switches to whichever total
