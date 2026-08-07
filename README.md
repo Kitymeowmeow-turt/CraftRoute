@@ -1,4 +1,4 @@
-# CraftRoute v2.11
+# CraftRoute v2.11.1
 Addon for OctoWow
 
 CraftRoute is a OctoWow addon that calculates the cheapest possible route to level any of the game's 9 crafting professions (Alchemy, Blacksmithing, Cooking, Enchanting, Engineering, Jewelcrafting, Leatherworking, Survival, Tailoring) from any level to any other level, using real, live Auction House prices rather than guesses.
@@ -130,6 +130,18 @@ Total cost after vendoring: 16g 45s 28c
 ...
 ```
 ## Version History
+
+v2.11.1
+-------
+Fix: a mandatory item (Enchanting's rods, Engineering's Arclight Spanner/
+Gyromatic Micro-Adjustor) could get silently removed from the route by
+the optimization pass that runs right after it's inserted -- that pass
+has no way to know the item is required, and could extend a different
+recipe back over its slot if that looked cheaper. Found from a real
+report of Arclight Spanner missing entirely from an Engineering route.
+Fixed by re-checking after that pass and re-inserting anything it
+removed.
+
 v2.11
 -----
 Fix: the guide comparison no longer auto-switches to whichever total
