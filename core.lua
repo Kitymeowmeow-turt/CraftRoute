@@ -2088,8 +2088,8 @@ end
 local CUSTOM_INSERTIONS = {
 	engineering = {
 		{name = "Explosive Sheep", qty = 5, atSkill = 150},
-		{name = "Solid Dynamite", qty = 20, atSkill = 175},
-		{name = "Big Iron Bomb", qty = 20, atSkill = 190},
+		{name = "Solid Dynamite", qty = 10, atSkill = 175},
+		{name = "Big Iron Bomb", qty = 10, atSkill = 190},
 	},
 	survival = {
 		{name = "Savory Fishing Lure", qty = 10, atSkill = 200},
