@@ -200,17 +200,6 @@ local function build_report(professionKey, total_cost, steps, missing, reached, 
 		table.insert(lines, "")
 	end
 
-	if getn(missing) > 0 then
-		table.insert(lines, "|cffff4444Missing AH price data for " .. getn(missing) .. " reagent(s):|r")
-		for i = 1, getn(missing) do
-			table.insert(lines, "  - " .. missing[i])
-		end
-		table.insert(lines, "")
-		table.insert(lines, "Open the Auction House, click the CraftRoute tab, and scan " .. professionKey .. "")
-		table.insert(lines, "(materials and/or recipes), then re-run this calculation.")
-		table.insert(lines, "")
-	end
-
 	if stuckAt then
 		table.insert(lines, "|cffff4444Route stops at skill " .. stuckAt .. "|r -- no priced recipe covers this range.")
 		table.insert(lines, "")
