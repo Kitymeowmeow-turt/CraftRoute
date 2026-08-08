@@ -25,6 +25,14 @@ the order they appear in). New entries get added directly below this note,
 not appended to the end.
 
 
+v2.11.8
+-------
+Fix: two reagents had wrong itemIds in the data. Swift Boots
+(leatherworking) referenced itemId 2359 instead of 2459 (Swiftness
+Potion); Crimson Silk Shoulders (tailoring) referenced 6271 instead of
+6371 (Fire Oil). Both now use the correct item directly by name.
+
+
 v2.11.7
 -------
 Removed the aux-addon dependency completely -- down to zero, not just
