@@ -1,4 +1,4 @@
-# CraftRoute v2.11.6
+# CraftRoute v2.11.8
 Addon for OctoWow
 
 CraftRoute is a OctoWow addon that calculates the cheapest possible route to level any of the game's 9 crafting professions (Alchemy, Blacksmithing, Cooking, Enchanting, Engineering, Jewelcrafting, Leatherworking, Survival, Tailoring) from any level to any other level, using real, live Auction House prices rather than guesses.
@@ -130,6 +130,26 @@ Total cost after vendoring: 16g 45s 28c
 ...
 ```
 ## Version History
+
+v2.11.8
+-------
+Fix: two reagents had wrong itemIds in the data. Swift Boots
+(leatherworking) referenced itemId 2359 instead of 2459 (Swiftness
+Potion); Crimson Silk Shoulders (tailoring) referenced 6271 instead of
+6371 (Fire Oil). Both now use the correct item directly by name.
+
+
+v2.11.7
+-------
+Removed the aux-addon dependency completely -- down to zero, not just
+narrowed. The one remaining touch point (a name->itemId lookup into
+aux's own cache) is gone entirely; a reagent with no itemId in its own
+data just has no itemId now, no external lookup attempted. Prompted by
+a real incident: aux silently handed the addon a wrong item for a real
+reagent name (Aquamarine). Also dropped the OptionalDeps line from the
+.toc, since there's no reason to care about aux's load order anymore.
+
+
 v2.11.6
 -------
 Removed the "Missing AH price data for..." section from the displayed
