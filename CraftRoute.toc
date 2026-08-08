@@ -2,7 +2,6 @@
 ## Title: CraftRoute
 ## Notes: Cheapest 1-300 profession leveling path calculator with its own AH scanner
 ## Author: You & Claude
-## OptionalDeps: aux-addon
 ## SavedVariables: CraftRoute_Scans, CraftRoute_Settings
 
 data_vendorprices.lua

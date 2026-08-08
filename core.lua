@@ -1,6 +1,11 @@
 -- CraftRoute: cheapest-1-to-300 profession leveling calculator
--- Reads scan data saved by the "aux-addon" Auction House addon (must be installed
--- and must have scanned the AH at least once; SavedVariables: aux).
+-- Prices everything from CraftRoute's own Auction House scan data
+-- (scan.lua, SavedVariables: CraftRoute_Scans) plus a hand-verified
+-- vendor price table (data_vendorprices.lua). No dependency on any
+-- other addon's data for pricing, availability, or item identity --
+-- see DEVNOTES §5 for why (a real, confirmed case of a different
+-- addon's own item-identity cache handing this addon a wrong item for
+-- a real reagent name, silently).
 --
 -- This file only depends on Lua 5.0 / vanilla WoW 1.12 API (getn, strlower, etc.)
 -- since Turtle WoW is a 1.12-based client.
@@ -27,22 +32,6 @@ function CraftRoute.IsAuthorized()
 	return raceFile ~= CraftRoute.EXCLUDED_RACE
 end
 
---------------------------------------------------------------------------
--- aux SavedVariables access
---------------------------------------------------------------------------
--- Only remaining touch point: GetItemId below, a name->itemId lookup into
--- aux's own item_ids cache. Used by ResolveReagent (reagent metadata, not
--- pricing) and GetItemName's itemId->name fallback path. Does NOT feed
--- any price/availability decision -- that dependency (aux's saved price
--- history) was removed entirely; see DEVNOTES §5.
-
--- Returns item id for an item name (case-insensitive), or nil if aux hasn't
--- seen that item name yet (i.e. it's never appeared in a scan/tooltip).
-function CraftRoute.GetItemId(itemName)
-	if not aux or not aux.account or not aux.account.item_ids then return nil end
-	return aux.account.item_ids[strlower(itemName)]
-end
-
 -- Returns the display name for an item id using the client's own item cache
 -- (GetItemInfo). On a 1.12-based client this is synchronous/reliable for any
 -- valid item id, no need to wait on GET_ITEM_INFO_RECEIVED. Falls back to a
@@ -55,23 +44,25 @@ function CraftRoute.GetItemName(itemId)
 end
 
 -- Resolves a reagent table ({name=...} and/or {itemId=...}) to a
--- (name, itemId) pair. Prefers the itemId path when available since it's
--- more robust than name matching (no typos/variant spelling, and doesn't
--- depend on aux having already seen the item).
+-- (name, itemId) pair -- exactly what the data itself specifies, nothing
+-- looked up or filled in from any other addon's own cache. A reagent
+-- entered by name only (no itemId in the data) simply has no itemId --
+-- every pricing/availability function in this file is keyed by name
+-- anyway, so this never blocks anything; itemId here is only ever used
+-- for display-name fallback (GetItemName above).
 function CraftRoute.ResolveReagent(r)
 	if r.itemId then
 		local name = r.name or CraftRoute.GetItemName(r.itemId)
 		return name, r.itemId
 	end
-	local id = CraftRoute.GetItemId(r.name)
-	return r.name, id
+	return r.name, nil
 end
 
 -- Returns the current AH market price only (CraftRoute's OWN scan data)
--- -- NOT including any vendor price, and NOT falling back to aux-addon's
--- saved history. If CraftRoute hasn't scanned it, the honest answer is
--- "unknown", not "guess from a secondary data source" -- if it isn't on
--- the AH (i.e. not in a real CraftRoute scan), you can't buy it. Used
+-- -- NOT including any vendor price. If CraftRoute hasn't scanned it, the
+-- honest answer is "unknown", not a guess pulled from any other addon's
+-- own data -- if it isn't on the AH (i.e. not in a real CraftRoute scan),
+-- you can't buy it. Used
 -- both by GetPriceFor (buying decisions) and by sell-side logic
 -- (currently disabled, see SELLBACK_ENABLED).
 function CraftRoute.GetMarketPrice(name, itemId)
@@ -497,10 +488,10 @@ end
 -- Depletion-aware cost for ONE reagent need of `qty` units: walks
 -- CraftRoute's own real AH listings in price order (same mechanism the
 -- shopping list already uses via OrderBookCost) for whatever's actually
--- covered, and falls back to the existing best-price logic (which also
--- checks aux/vendor/make-vs-buy) for whatever isn't -- either because
--- CraftRoute hasn't scanned this item specifically (not necessarily
--- scarce, just unscanned by us), or because the AH genuinely doesn't have
+-- covered, and falls back to the existing best-price logic (vendor/
+-- make-vs-buy) for whatever isn't -- either because CraftRoute hasn't
+-- scanned this item specifically (not necessarily scarce, just
+-- unscanned by us), or because the AH genuinely doesn't have
 -- enough listed. Capped against the flat fallback price so this can never
 -- come out worse than the old always-cheapest-listing assumption.
 -- How much more expensive to treat reagent units beyond what's actually
