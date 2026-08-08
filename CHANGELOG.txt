@@ -25,6 +25,48 @@ the order they appear in). New entries get added directly below this note,
 not appended to the end.
 
 
+v2.11.6
+-------
+Removed the "Missing AH price data for..." section from the displayed
+report -- players were reading it as a bug rather than the normal,
+expected note it actually was. The underlying tracking is untouched;
+this only changes what gets printed. Route selection and cost were
+never affected by whether this got displayed.
+
+
+v2.11.5
+-------
+Confirmed vendor prices for 5 of the 36 recipes fixed in v2.11.4 --
+these are actually reliably vendor-purchasable, not AH-only:
+Pattern: Enchanted Runecloth Bag (2g), Pattern: Heavy Scorpid Helm
+(2g50s), Pattern: Runic Leather Headband (2g20s), Pattern: Nightscape
+Shoulders (40s), Schematic: Snake Burst Firework (50s). Their
+requiresScan gate is removed accordingly -- the vendor price already
+takes priority over that check, so it was no longer doing anything for
+these five. The other 31 recipes from v2.11.4 are unchanged, still
+correctly gated until scanned.
+
+
+v2.11.4
+-------
+Fix: 36 recipes across Blacksmithing (8), Engineering (18),
+Leatherworking (7), and Tailoring (3) could get chosen as route steps
+while genuinely unscanned and unavailable, because they were missing a
+flag needed to correctly block that -- an unscanned recipe meant to say
+"don't guess" was silently defaulting to "free" instead. Found from a
+report of Blue Rocket Cluster being routed despite not existing
+anywhere in the reporter's scan data. Added the missing flag to all 36;
+full list in DEVNOTES.
+
+
+v2.11.3
+-------
+Fix: Ez-Thro Dynamite II was incorrectly marked trainer-taught with a
+rough estimated cost. It's actually scroll-taught (Schematic: EZ-Thro
+Dynamite II) -- now priced from its scanned scroll cost like the base
+Ez-Thro Dynamite already was, rather than guessed.
+
+
 v2.11.2
 -------
 Engineering custom insertions: Solid Dynamite and Big Iron Bomb reduced
