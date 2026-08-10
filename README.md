@@ -131,6 +131,24 @@ Total cost after vendoring: 16g 45s 28c
 ```
 ## Version History
 
+
+v2.12.0
+-------
+Feature: added an "Orange leveling recipes only" checkbox to the Auction
+House panel. When enabled, the optimized leveling path only selects a
+recipe while the current skill is inside that recipe's guaranteed orange
+window ([orange, yellow)) -- the downstream passes that intentionally
+stretch leveling crafts into yellow/green to save money (extension
+cascade, optional stockpiling insertions) are disabled in this mode, since
+that would violate the guaranteed-skillup promise. Mandatory profession
+tools are still always included. When this mode stops a route at a skill
+gap (no recipe has an orange window there), the report also shows what the
+same reachable range would cost under CraftRoute's normal chance-aware
+optimizer, so the real gold cost of insisting on guaranteed skill-ups is
+visible rather than implied. The setting is saved in CraftRoute_Settings
+and defaults to off, preserving the existing behavior for everyone who
+doesn't touch it.
+
 v2.11.8
 -------
 Fix: two reagents had wrong itemIds in the data. Swift Boots

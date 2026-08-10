@@ -16,6 +16,9 @@ CraftRoute_Settings = CraftRoute_Settings or {}
 if CraftRoute_Settings.includeSellbackScan == nil then
 	CraftRoute_Settings.includeSellbackScan = false
 end
+if CraftRoute_Settings.orangeOnlySkillups == nil then
+	CraftRoute_Settings.orangeOnlySkillups = false
+end
 
 --------------------------------------------------------------------------
 -- Guild restriction
@@ -234,6 +237,13 @@ end
 -- startSkill (nil) means "everything is relevant", matching a plain 1-300 scan.
 local function is_relevant_for_start(recipe, startSkill)
 	if not startSkill then return true end
+	if CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups then
+		-- In orange-only mode, a recipe that is already yellow at the
+		-- starting skill can never become orange again later, so its own
+		-- leveling reagents are irrelevant for this route. Recursive
+		-- make-vs-buy dependencies are still expanded below as usual.
+		return recipe.yellow > startSkill
+	end
 	return recipe.grey > startSkill
 end
 
@@ -902,6 +912,14 @@ function CraftRoute.CalculatePath(professionKey, targetSkill, startSkill)
 			local r = recipes[i]
 			if costs[i] then
 				local chance = skillup_chance(skill, r.orange, r.yellow, r.green, r.grey)
+				-- Optional strict mode: only use recipes while they are actually
+				-- orange at the current skill. In this data model that is the
+				-- half-open interval [orange, yellow). Recipes with orange ==
+				-- yellow therefore have no guaranteed-skillup window at all.
+				if CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups
+					and skill >= r.yellow then
+					chance = 0
+				end
 				if chance > 0 then
 					local expected_cost = costs[i] / chance
 					local effective_cost = expected_cost
@@ -1062,7 +1080,12 @@ function CraftRoute.CalculatePath(professionKey, targetSkill, startSkill)
 	--    Trimming a step can itself create a NEW reagent shortfall (if
 	--    the trimmed step was also supplying something later) -- that's
 	--    exactly what sends this back through passes 1/1b/2 again.
-	if not stuckAt and getn(steps) > 1 then
+	if not stuckAt and getn(steps) > 1
+		and not (CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups) then
+		-- The extension cascade intentionally stretches crafts into yellow,
+		-- green and even grey when doing so helps downstream production.
+		-- That is useful in normal cost-optimized mode, but it would violate
+		-- the promise of strict orange-only leveling, so skip it there.
 		steps, total_cost = run_extension_cascade(professionKey, steps, total_cost, targetSkill, recipeLookup, costCache)
 	end
 
@@ -1121,7 +1144,8 @@ function CraftRoute.CalculatePath(professionKey, targetSkill, startSkill)
 			anyMandatoryChange = true
 		end
 
-		if anyMandatoryChange and getn(steps) > 1 then
+		if anyMandatoryChange and getn(steps) > 1
+			and not (CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups) then
 			steps, total_cost = run_extension_cascade(professionKey, steps, total_cost, targetSkill, recipeLookup, costCache)
 
 			local restoredSteps, restoredMandatory = CraftRoute.ApplyMandatoryCrafts(
@@ -2091,6 +2115,12 @@ local CUSTOM_INSERTIONS = {
 
 -- Returns: newSteps, anyInserted (bool)
 function CraftRoute.ApplyCustomInsertions(professionKey, steps, startSkill, targetSkill, recipeLookup, cache)
+	-- These are optional stockpiling/personal-use crafts, not profession
+	-- requirements. Some intentionally start in yellow, so suppress them in
+	-- strict orange-only mode rather than letting them consume leveling slots.
+	if CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups then
+		return steps, false
+	end
 	local items = CUSTOM_INSERTIONS[professionKey]
 	if not items then
 		return steps, false

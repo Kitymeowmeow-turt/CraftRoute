@@ -132,7 +132,7 @@ local function build_panel()
 
 	local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	title:SetPoint("TOP", panel, "TOP", 0, -60)
-	title:SetText("CraftRoute -- v2.11.8 -- Scan Reagents")
+	title:SetText("CraftRoute -- v2.12.0 -- Scan Reagents")
 
 	local subtitle = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 	subtitle:SetPoint("TOP", title, "BOTTOM", 0, -8)
@@ -212,10 +212,24 @@ local function build_panel()
 	local belowListY = startY - getn(list) * (buttonHeight + spacing) - 20
 	local leftEdgeX = -(rightColumnWidth + gap) / 2  -- same anchor the profession buttons use
 
+	local orangeOnlyCheck = CreateFrame("CheckButton", "CraftRouteOrangeOnlyCheck", panel, "UICheckButtonTemplate")
+	orangeOnlyCheck:SetWidth(20)
+	orangeOnlyCheck:SetHeight(20)
+	orangeOnlyCheck:SetPoint("TOPLEFT", panel, "TOP", leftEdgeX - 65, belowListY)
+	orangeOnlyCheck:SetChecked(CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups)
+	orangeOnlyCheck:SetScript("OnClick", function()
+		CraftRoute_Settings.orangeOnlySkillups = (orangeOnlyCheck:GetChecked() and true) or false
+	end)
+
+	local orangeOnlyLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+	orangeOnlyLabel:SetJustifyH("LEFT")
+	orangeOnlyLabel:SetPoint("LEFT", orangeOnlyCheck, "RIGHT", 4, 0)
+	orangeOnlyLabel:SetText("Orange leveling recipes only (guaranteed skill-ups)")
+
 	local sellbackCheck = CreateFrame("CheckButton", "CraftRouteSellbackCheck", panel, "UICheckButtonTemplate")
 	sellbackCheck:SetWidth(20)
 	sellbackCheck:SetHeight(20)
-	sellbackCheck:SetPoint("TOPLEFT", panel, "TOP", leftEdgeX - 65, belowListY)
+	sellbackCheck:SetPoint("TOPLEFT", orangeOnlyCheck, "BOTTOMLEFT", 0, -2)
 	if CraftRoute.SELLBACK_ENABLED then
 		sellbackCheck:SetChecked(CraftRoute_Settings and CraftRoute_Settings.includeSellbackScan)
 		sellbackCheck:SetScript("OnClick", function()
