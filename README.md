@@ -132,6 +132,20 @@ Total cost after vendoring: 16g 45s 28c
 ## Version History
 
 
+v2.12.1
+-------
+Performance: Auction House scanning no longer waits a fixed 0.6 seconds
+after every item/page when the current result is already fully resolved.
+The scanner now advances immediately once every auction row on the current
+page has a usable item name. This only ever fires early when something
+outside CraftRoute has already cleared the client's own browse-query
+throttle before the update event arrives -- CanSendAuctionQuery() reports
+the real client state either way, so a stock client scans exactly as
+before. The previous 0.6-second quiet-period remains as a fallback for
+vanilla item-cache rows that are still unresolved, preserving the old
+behavior instead of risking missing listings or hanging a scan.
+
+
 v2.12.0
 -------
 Feature: added an "Orange leveling recipes only" checkbox to the Auction

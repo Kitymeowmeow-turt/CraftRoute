@@ -11,7 +11,20 @@
 CraftRoute = CraftRoute or {}
 CraftRoute_Scans = CraftRoute_Scans or {}
 
-local QUIET_PERIOD = 0.6 -- seconds of no AUCTION_ITEM_LIST_UPDATE before we consider a query's results final
+-- Fast path: as soon as every row on the current AH page has a resolved
+-- item name, the page is safe to consume immediately. Some external tools
+-- clear the client-side browse throttle before AUCTION_ITEM_LIST_UPDATE
+-- fires, which lets a scan advance at actual server round-trip/cache speed
+-- instead of imposing an extra fixed delay on every item/page. Nothing
+-- here requires such a tool -- CanSendAuctionQuery() just reports the
+-- real client state either way, so a stock client behaves exactly as
+-- before.
+--
+-- Keep the old 0.6s quiet-period behavior only as a fallback. Vanilla 1.12 can
+-- briefly expose auction rows whose item names are still waiting on the local
+-- item cache; if those never finish resolving, we eventually process the page
+-- exactly as the old scanner did rather than hanging forever.
+local QUIET_PERIOD = 0.6
 local PAGE_SIZE = 50
 
 local scanFrame = CreateFrame("Frame")
@@ -301,6 +314,21 @@ local function send_query()
 	state.lastUpdateTime = GetTime()
 end
 
+-- Returns true once every row currently reported by the AH has enough item
+-- cache data for CraftRoute to safely identify it. Price/count fields come
+-- from the auction result itself; the item name is the part that may lag while
+-- the 1.12 client resolves its item cache.
+local function current_page_ready()
+	local numBatch = GetNumAuctionItems("list")
+	for i = 1, numBatch do
+		local name = GetAuctionItemInfo("list", i)
+		if not name then
+			return false
+		end
+	end
+	return true
+end
+
 local function finalize_current_page()
 	local numBatch, totalAuctions = GetNumAuctionItems("list")
 
@@ -373,6 +401,21 @@ scanFrame:RegisterEvent("AUCTION_ITEM_LIST_UPDATE")
 scanFrame:SetScript("OnEvent", function()
 	if state.active and state.awaitingUpdate then
 		state.lastUpdateTime = GetTime()
+
+		-- Do not impose QUIET_PERIOD when the page is already complete. If
+		-- something has cleared the browse throttle before this event is
+		-- dispatched, CanSendAuctionQuery() is already true here, so finalize
+		-- now and send the next item/page immediately instead of waiting out
+		-- the fallback period for nothing. On a stock client this check simply
+		-- fails (the throttle isn't clear yet) and the normal OnUpdate path
+		-- below runs exactly as before.
+		if CanSendAuctionQuery() and current_page_ready() then
+			finalize_current_page()
+
+			if state.active and not state.awaitingUpdate and state.currentName and CanSendAuctionQuery() then
+				send_query()
+			end
+		end
 	end
 end)
 
