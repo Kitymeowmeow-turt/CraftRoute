@@ -22,7 +22,7 @@
 -- 1-300 scope, same policy as Jewelcrafting) -- not excluded=true, just not here.
 CraftRoute_Data = CraftRoute_Data or {}
 CraftRoute_Data["survival"] = {
-  {name="Dim Torch", orange=1, yellow=30, green=45, grey=60, learnCost=200, learnCostConfidence="estimated", reagents={{name="Unlit Poor Torch", qty=1}}},
+  {name="Dim Torch", orange=1, yellow=10, green=12, grey=15, learnCost=200, learnCostConfidence="estimated", reagents={{name="Unlit Poor Torch", qty=1}}},
   {name="Bundle of Simple Sticks", orange=5, yellow=10, green=12, grey=15, learnCost=200, learnCostConfidence="estimated", reagents={{name="Simple Wood", qty=2}}},
   {name="Driftwood Fishing Pole", orange=10, yellow=40, green=55, grey=70, learnCost=200, learnCostConfidence="estimated", reagents={{name="Coarse Thread", qty=2}, {name="Rugged String", qty=1}, {name="Simple Wood", qty=2}}},
   {name="Survivalist's Skinning Knife", orange=10, yellow=30, green=45, grey=60, learnCost=200, learnCostConfidence="estimated", reagents={{name="Rough Stone", qty=2}, {name="Coarse Thread", qty=1}, {name="Light Leather", qty=1}}},
@@ -38,7 +38,7 @@ CraftRoute_Data["survival"] = {
   {name="Makeshift Knife", orange=60, yellow=80, green=90, grey=100, learnCost=200, learnCostConfidence="estimated", reagents={{name="Simple Wood", qty=1}, {name="Copper Bar", qty=3}, {name="Light Leather", qty=2}}},
   {name="Gardening Gloves", orange=65, yellow=85, green=95, grey=105, learnCost=200, learnCostConfidence="estimated", reagents={{name="Light Leather", qty=4}, {name="Coarse Thread", qty=2}, {name="Peacebloom", qty=6}}},
   {name="Crude Fishing Rod", orange=70, yellow=90, green=100, grey=110, learnCost=200, learnCostConfidence="estimated", reagents={{name="Simple Wood", qty=8}, {name="Fine Thread", qty=1}}},
-  {name="Traveler's Tent", orange=50, yellow=100, green=125, grey=150, learnCost=200, learnCostConfidence="estimated", reagents={{name="Simple Wood", qty=5}, {name="Linen Cloth", qty=10}, {name="Sturdy Rope", qty=1}}},
+  {name="Traveler's Tent", orange=50, yellow=100, green=125, grey=150, learnCost=200, learnCostConfidence="estimated", excluded=true, excludeFromMakeVsBuy=true, reagents={{name="Simple Wood", qty=5}, {name="Linen Cloth", qty=10}, {name="Sturdy Rope", qty=1}}},
   {name="Fishing Boat", orange=75, yellow=125, green=150, grey=175, learnCost=200, learnCostConfidence="estimated", reagents={{name="Simple Wood", qty=20}, {name="Handful of Copper Bolts", qty=10}, {name="Fish Oil", qty=2}}},
   {name="Hunting Spear", orange=90, yellow=110, green=120, grey=130, learnCost=200, learnCostConfidence="estimated", reagents={{name="Bronze Bar", qty=8}, {name="Light Leather", qty=4}, {name="Fine Thread", qty=2}, {name="Simple Wood", qty=12}}},
   {name="Gardening Broom", orange=95, yellow=115, green=125, grey=135, learnCost=200, learnCostConfidence="estimated", reagents={{name="Simple Wood", qty=6}, {name="Bundle of Simple Sticks", qty=8}, {name="Fine Thread", qty=1}, {name="Medium Leather", qty=1}}},
