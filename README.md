@@ -132,6 +132,14 @@ Total cost after vendoring: 16g 45s 28c
 ## Version History
 
 
+v2.12.2
+-------
+Fine Leather Gloves (Leatherworking) thresholds corrected to
+orange=75/yellow=105/green=120/grey=135 (were orange=1/yellow=40/
+green=55/grey=70, matching two unrelated neighboring recipes -- a
+copy-paste error, not a real outlier). User-confirmed.
+
+
 v2.12.1
 -------
 Performance: Auction House scanning no longer waits a fixed 0.6 seconds
