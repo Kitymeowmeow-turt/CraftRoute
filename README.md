@@ -132,6 +132,15 @@ Total cost after vendoring: 16g 45s 28c
 ## Version History
 
 
+v2.12.3
+-------
+Guardian Gloves (Leatherworking) thresholds corrected to
+orange=190/yellow=210/green=220/grey=230 (were orange=185/yellow=205/
+green=215/grey=225 -- a uniform off-by-5 against every threshold).
+Now matches its two neighboring recipes, Barbaric Harness and Gloves
+of the Greatfather, both already 190/210/220/230. User-confirmed.
+
+
 v2.12.2
 -------
 Fine Leather Gloves (Leatherworking) thresholds corrected to
