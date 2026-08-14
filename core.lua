@@ -180,6 +180,27 @@ local function skillup_chance(s, orange, yellow, green, grey)
 	end
 end
 
+-- The extend/insert/produce/trim cascade's hard ceiling for how far a
+-- recipe's own credited range can be pushed. Normally a recipe's real
+-- grey -- no further skill value past that, in any mode. In orange/yellow-
+-- only mode this pulls in to the recipe's own green instead: letting an
+-- extension or insertion reach into green would put a real route step
+-- there, which is exactly what that mode promises not to do. (Orange-only
+-- mode doesn't use this -- it skips the whole cascade instead, since even
+-- reaching yellow would violate ITS promise; see the two run_extension_
+-- cascade call sites in CalculatePath.) Declared here, immediately after
+-- skillup_chance, specifically so every cascade function below it in this
+-- file (ApplyDownstreamExtensions first) sees it as a real local upvalue
+-- rather than an unset global -- see DEVNOTES for the exact bug this
+-- avoids (a local referenced before its own declaration in this file
+-- silently resolves as a global instead).
+local function extension_ceiling(recipe)
+	if CraftRoute_Settings and CraftRoute_Settings.orangeYellowOnlySkillups then
+		return recipe.green
+	end
+	return recipe.grey
+end
+
 --------------------------------------------------------------------------
 -- Reagent cost calculation (with make-vs-buy substitution)
 --------------------------------------------------------------------------
@@ -1103,12 +1124,18 @@ function CraftRoute.CalculatePath(professionKey, targetSkill, startSkill)
 	--    the trimmed step was also supplying something later) -- that's
 	--    exactly what sends this back through passes 1/1b/2 again.
 	if not stuckAt and getn(steps) > 1
-		and not (CraftRoute_Settings and (CraftRoute_Settings.orangeOnlySkillups or CraftRoute_Settings.orangeYellowOnlySkillups)) then
-		-- The extension cascade intentionally stretches crafts into yellow,
-		-- green and even grey when doing so helps downstream production.
-		-- That is useful in normal cost-optimized mode, but it would violate
-		-- the promise of either strict mode (orange-only, or orange/yellow-
-		-- only), so skip it for both.
+		and not (CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups) then
+		-- The extension cascade intentionally stretches crafts forward when
+		-- doing so helps downstream production. In normal mode that can
+		-- reach all the way into grey; orange-only mode skips this pass
+		-- entirely, since even reaching yellow would violate its 100%-
+		-- guaranteed promise. Orange/yellow-only mode DOES run this --
+		-- extension_ceiling() (used throughout ApplyDownstreamExtensions/
+		-- ApplyRecipeInsertion/ApplyTrimming) caps every extension/insertion
+		-- at each recipe's own green instead of grey when that mode is
+		-- active, so a legitimate extension within yellow (which that mode
+		-- allows) still happens instead of falling through to a flat,
+		-- zero-credit hidden craft.
 		steps, total_cost = run_extension_cascade(professionKey, steps, total_cost, targetSkill, recipeLookup, costCache)
 	end
 
@@ -1168,7 +1195,7 @@ function CraftRoute.CalculatePath(professionKey, targetSkill, startSkill)
 		end
 
 		if anyMandatoryChange and getn(steps) > 1
-			and not (CraftRoute_Settings and (CraftRoute_Settings.orangeOnlySkillups or CraftRoute_Settings.orangeYellowOnlySkillups)) then
+			and not (CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups) then
 			steps, total_cost = run_extension_cascade(professionKey, steps, total_cost, targetSkill, recipeLookup, costCache)
 
 			local restoredSteps, restoredMandatory = CraftRoute.ApplyMandatoryCrafts(
@@ -1281,7 +1308,7 @@ function CraftRoute.ApplyDownstreamExtensions(professionKey, steps, total_cost, 
 		local key = strlower(s.name)
 		local shortfall = (demanded[key] or 0) - (produced[key] or 0)
 		local recipe = recipes[s.recipeIndex]
-		local canExtend = shortfall > 0 and s.toSkill < recipe.grey and s.toSkill < targetSkill and i < getn(steps)
+		local canExtend = shortfall > 0 and s.toSkill < extension_ceiling(recipe) and s.toSkill < targetSkill and i < getn(steps)
 
 		if canExtend then
 			-- how far do the immediately-following step(s) reach before this
@@ -1294,7 +1321,7 @@ function CraftRoute.ApplyDownstreamExtensions(professionKey, steps, total_cost, 
 			local coveredTo = s.toSkill
 			local originalSubCost = 0
 			local leftoverStep = nil
-			local extensionEnd = math.min(recipe.grey, targetSkill)
+			local extensionEnd = math.min(extension_ceiling(recipe), targetSkill)
 			while j <= getn(steps) do
 				local nj = steps[j]
 				if nj.fromSkill >= extensionEnd then
@@ -1436,15 +1463,17 @@ end
 -- (added flat by ApplyPureProductionExtensions, priced at zero skill-up
 -- value), walks the recipe's REAL, decaying skillup_chance curve forward
 -- from `fromSkill` to find how far those crafts would have actually
--- carried skill if credited properly -- capped at the recipe's own grey,
--- since no further real progress is possible past that regardless of
--- leftover budget. Only claims a skill point if the full 1/chance cost
--- for it is covered by the remaining budget -- never rounds up, so this
--- can only under-claim free progress, never overstate it.
+-- carried skill if credited properly -- capped at extension_ceiling
+-- (normally the recipe's own grey; green instead in orange/yellow-only
+-- mode), since no further real progress is possible/allowed past that
+-- regardless of leftover budget. Only claims a skill point if the full
+-- 1/chance cost for it is covered by the remaining budget -- never rounds
+-- up, so this can only under-claim free progress, never overstate it.
 local function simulate_forward_landing(recipe, fromSkill, extraCrafts)
 	local sk = fromSkill
 	local budget = extraCrafts
-	while sk < recipe.grey and budget > 0 do
+	local ceiling = extension_ceiling(recipe)
+	while sk < ceiling and budget > 0 do
 		local chance = skillup_chance(sk, recipe.orange, recipe.yellow, recipe.green, recipe.grey)
 		local pointCost = (chance > 0) and (1 / chance) or 1
 		if budget < pointCost then
@@ -1585,7 +1614,7 @@ function CraftRoute.ApplyRecipeInsertion(professionKey, steps, total_cost, recip
 					local insertSkill = nil
 					for i = 1, getn(currentSteps) do
 						local s = currentSteps[i]
-						if s.toSkill > producingRecipe.orange and s.fromSkill < producingRecipe.grey then
+						if s.toSkill > producingRecipe.orange and s.fromSkill < extension_ceiling(producingRecipe) then
 							insertSkill = math.max(s.fromSkill, producingRecipe.orange)
 							break
 						end
@@ -1851,7 +1880,7 @@ function CraftRoute.ApplyTrimming(professionKey, steps, extensions, total_cost, 
 		local step = ext.step
 		local recipe = recipes[step.recipeIndex]
 
-		if step.toSkill < recipe.grey then
+		if step.toSkill < extension_ceiling(recipe) then
 			local landing = simulate_forward_landing(recipe, step.toSkill, ext.extraUnits)
 			if landing > step.toSkill then
 				local idx = nil

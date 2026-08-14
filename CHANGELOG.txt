@@ -25,6 +25,26 @@ the order they appear in). New entries get added directly below this note,
 not appended to the end.
 
 
+v2.13.1
+-------
+Fix: Orange/Yellow-only mode (v2.13.0) was silently wasting real skill-up
+value on any recipe with downstream reagent demand -- e.g. Tailoring's
+Bolt of Linen Cloth would stop being used as a route step partway through
+its own yellow band (a plain greedy switch to a cheaper-per-point recipe),
+and the rest of the route's real demand for it fell through entirely to a
+flat, zero-skill-credit "Also craft along the way" line instead of a real,
+credited route step. Root cause: this mode disabled the ENTIRE extend/
+insert/produce/trim cascade, the same treatment Orange-only mode uses --
+but Orange-only's reasoning (any extension at all risks reaching past its
+100%-guaranteed orange window) doesn't apply here, since extending within
+yellow is exactly what this mode is supposed to allow. Fix: the cascade
+now runs for this mode too, with every extension/insertion capped at each
+recipe's own green instead of grey, so a real credited extension can still
+happen anywhere within orange+yellow, while never producing a route step
+that reaches into green. Orange-only mode's own handling (full cascade
+skip) is unchanged.
+
+
 v2.13.0
 -------
 Feature: added an "Orange/Yellow leveling recipes only (no green crafts)"
