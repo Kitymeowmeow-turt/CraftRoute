@@ -132,6 +132,25 @@ Total cost after vendoring: 16g 45s 28c
 ## Version History
 
 
+v2.13.0
+-------
+Feature: added an "Orange/Yellow leveling recipes only (no green crafts)"
+checkbox to the Auction House panel, above the existing "Orange leveling
+recipes only" checkbox. Same idea, one band wider: the optimized leveling
+path only selects a recipe while the current skill is inside that
+recipe's orange or yellow window ([orange, green)) -- green crafts (and
+the low-odds grey ones) are skipped entirely, but yellow's real, decaying
+skill-up chance is used as-is, not inflated to look like a guarantee.
+The two checkboxes are mutually exclusive (checking one unchecks the
+other) since orange-only is already a subset of this wider mode. Reuses
+the same guardrails the orange-only mode already had: the extension
+cascade and optional custom insertions are disabled (both can stretch a
+recipe into green), the guide comparison is hidden (guides freely use
+green), and the report shows the same "vs normal optimized" cost
+comparison, reworded for whichever strict mode is active. Setting is
+saved in CraftRoute_Settings and defaults to off.
+
+
 v2.12.3
 -------
 Guardian Gloves (Leatherworking) thresholds corrected to

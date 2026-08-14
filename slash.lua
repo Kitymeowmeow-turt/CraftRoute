@@ -160,6 +160,9 @@ local function build_report(professionKey, total_cost, steps, missing, reached, 
 	if CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups then
 		table.insert(lines, "|cffffcc00Mode: Orange leveling recipes only (guaranteed skill-ups).|r")
 		table.insert(lines, "")
+	elseif CraftRoute_Settings and CraftRoute_Settings.orangeYellowOnlySkillups then
+		table.insert(lines, "|cffffcc00Mode: Orange/Yellow leveling recipes only (no green crafts).|r")
+		table.insert(lines, "")
 	end
 
 	if candidates and getn(candidates) > 1 then
@@ -208,6 +211,8 @@ local function build_report(professionKey, total_cost, steps, missing, reached, 
 	if stuckAt then
 		if CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups then
 			table.insert(lines, "|cffff4444Route stops at skill " .. stuckAt .. "|r -- no priced orange recipe covers this skill.")
+		elseif CraftRoute_Settings and CraftRoute_Settings.orangeYellowOnlySkillups then
+			table.insert(lines, "|cffff4444Route stops at skill " .. stuckAt .. "|r -- no priced orange/yellow recipe covers this skill.")
 		else
 			table.insert(lines, "|cffff4444Route stops at skill " .. stuckAt .. "|r -- no priced recipe covers this range.")
 		end
@@ -287,18 +292,23 @@ local function build_report(professionKey, total_cost, steps, missing, reached, 
 		table.insert(lines, "|cffFA0C0C" .. netCostLabel .. CraftRoute.MoneyString(netCost) .. "|r")
 	end
 
-	-- When strict orange-only leveling is enabled, also price the exact same
-	-- reachable skill range using CraftRoute's normal chance-aware optimizer.
-	-- This deliberately compares TRUE shopping costs (actual scanned listing
-	-- depletion + learn costs), not the greedy loop's internal expected-cost
-	-- heuristic. If either route returns money from leftover crafts, compare
-	-- the post-sellback net totals too, because that's the number the player
-	-- ultimately cares about rather than the gross checkout receipt.
+	-- When a strict leveling mode is enabled (orange-only, or orange/yellow-
+	-- only), also price the exact same reachable skill range using
+	-- CraftRoute's normal chance-aware optimizer. This deliberately compares
+	-- TRUE shopping costs (actual scanned listing depletion + learn costs),
+	-- not the greedy loop's internal expected-cost heuristic. If either
+	-- route returns money from leftover crafts, compare the post-sellback
+	-- net totals too, because that's the number the player ultimately cares
+	-- about rather than the gross checkout receipt.
 	if normalComparison and normalComparison.total then
+		local isOrangeOnly = CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups
+		local modeLabel = isOrangeOnly and "Orange Only" or "Orange/Yellow Only"
+		local extraLabel = isOrangeOnly and "Extra for guaranteed skill-ups: +" or "Extra to avoid green crafts: +"
+
 		local useNet = sellBackCredit > 0 or (normalComparison.sellBackCredit or 0) > 0
-		local orangeCompare = useNet and netCost or trueCost
+		local strictCompare = useNet and netCost or trueCost
 		local normalCompare = useNet and normalComparison.netTotal or normalComparison.total
-		local diff = orangeCompare - normalCompare
+		local diff = strictCompare - normalCompare
 		local pct = nil
 		if normalCompare > 0 then
 			pct = (diff / normalCompare) * 100
@@ -307,22 +317,22 @@ local function build_report(professionKey, total_cost, steps, missing, reached, 
 		table.insert(lines, "")
 		local basis = useNet and ", after sellback" or ""
 		table.insert(lines, string.format(
-			"|cffffcc00Orange Only vs normal optimized (%d-%d%s):|r",
-			startSkill, normalComparison.rangeEnd or reached, basis))
+			"|cffffcc00%s vs normal optimized (%d-%d%s):|r",
+			modeLabel, startSkill, normalComparison.rangeEnd or reached, basis))
 		table.insert(lines, "  Normal optimized: " .. CraftRoute.MoneyString(normalCompare))
-		table.insert(lines, "  Orange only:      " .. CraftRoute.MoneyString(orangeCompare))
+		table.insert(lines, "  " .. modeLabel .. ": " .. CraftRoute.MoneyString(strictCompare))
 
 		if diff >= 0 then
 			local pctText = pct and string.format(" (+%.1f%%)", pct) or ""
-			table.insert(lines, "  |cffffcc00Extra for guaranteed skill-ups: +" .. CraftRoute.MoneyString(diff) .. pctText .. "|r")
+			table.insert(lines, "  |cffffcc00" .. extraLabel .. CraftRoute.MoneyString(diff) .. pctText .. "|r")
 		else
 			local saving = -diff
 			local pctText = pct and string.format(" (%.1f%%)", pct) or ""
-			table.insert(lines, "  |cff00ff00Orange Only is cheaper here: -" .. CraftRoute.MoneyString(saving) .. pctText .. "|r")
+			table.insert(lines, "  |cff00ff00" .. modeLabel .. " is cheaper here: -" .. CraftRoute.MoneyString(saving) .. pctText .. "|r")
 		end
 
 		if normalComparison.partial then
-			table.insert(lines, "  |cffaaaaaaCompared only through skill " .. (normalComparison.rangeEnd or reached) .. " because Orange Only stops there.|r")
+			table.insert(lines, "  |cffaaaaaaCompared only through skill " .. (normalComparison.rangeEnd or reached) .. " because " .. modeLabel .. " stops there.|r")
 		end
 		table.insert(lines, "")
 	end
@@ -469,24 +479,31 @@ SlashCmdList["CRAFTROUTE"] = function(msg)
 		return
 	end
 
-	-- Orange-only cost comparison. Re-run CraftRoute's own optimizer with the
-	-- strict filter temporarily disabled, but only to the exact same skill
-	-- level the orange route actually reached. That keeps a route which stops
-	-- at an orange gap (for example 1-250 of a requested 1-300) from being
-	-- misleadingly compared against a full normal 1-300 route. The setting is
-	-- restored immediately before any report/guide logic runs.
+	-- Strict-mode cost comparison (orange-only, or orange/yellow-only).
+	-- Re-run CraftRoute's own optimizer with both strict filters temporarily
+	-- disabled, but only to the exact same skill level the strict route
+	-- actually reached. That keeps a route which stops at a gap (for example
+	-- 1-250 of a requested 1-300) from being misleadingly compared against a
+	-- full normal 1-300 route. Both settings are restored immediately before
+	-- any report/guide logic runs.
 	local normalComparison = nil
-	if CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups and reached and reached > start then
+	local strictModeActive = CraftRoute_Settings
+		and (CraftRoute_Settings.orangeOnlySkillups or CraftRoute_Settings.orangeYellowOnlySkillups)
+	if strictModeActive and reached and reached > start then
 		local compareTarget = reached
 		local oldOrangeOnly = CraftRoute_Settings.orangeOnlySkillups
+		local oldOrangeYellowOnly = CraftRoute_Settings.orangeYellowOnlySkillups
 		CraftRoute_Settings.orangeOnlySkillups = false
+		CraftRoute_Settings.orangeYellowOnlySkillups = false
 		local normalCost, normalSteps, normalMissing, normalReached, normalStuckAt, normalLearnCost =
 			CraftRoute.CalculatePath(prof, compareTarget, start)
 		CraftRoute_Settings.orangeOnlySkillups = oldOrangeOnly
+		CraftRoute_Settings.orangeYellowOnlySkillups = oldOrangeYellowOnly
 
-		-- Normal mode is a superset of orange-only choices, so it should always
-		-- be able to reach at least this far. Keep the guard anyway; strange scan
-		-- data deserves a missing comparison, not an invented percentage.
+		-- Normal mode is a superset of either strict mode's choices, so it
+		-- should always be able to reach at least this far. Keep the guard
+		-- anyway; strange scan data deserves a missing comparison, not an
+		-- invented percentage.
 		if normalCost and normalSteps and normalReached == compareTarget and not normalStuckAt then
 			local normalTrue = CraftRoute.TrueShoppingCost(prof, normalSteps) + (normalLearnCost or 0)
 			local normalSellBackCredit = CraftRoute.SellBackCredit(prof, normalSteps)
@@ -516,9 +533,10 @@ SlashCmdList["CRAFTROUTE"] = function(msg)
 	})
 
 	-- Static guides freely use yellow/green recipes, so their totals are not
-	-- comparable to a strict guaranteed-skillup route. Hide that comparison
-	-- while orange-only mode is active instead of presenting apples vs RNG.
-	if CraftRoute_GuideSteps and not (CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups) then
+	-- comparable to either strict mode's route (orange-only, or orange/
+	-- yellow-only). Hide that comparison while either is active instead of
+	-- presenting apples vs RNG.
+	if CraftRoute_GuideSteps and not (CraftRoute_Settings and (CraftRoute_Settings.orangeOnlySkillups or CraftRoute_Settings.orangeYellowOnlySkillups)) then
 		for guideKey, guideProfs in pairs(CraftRoute_GuideSteps) do
 			if guideProfs[prof] then
 				local gCost, gSteps, gMissing, gReached, gStuckAt, gLearnCost, gLearnEstimated =

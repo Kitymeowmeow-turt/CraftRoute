@@ -19,6 +19,16 @@ end
 if CraftRoute_Settings.orangeOnlySkillups == nil then
 	CraftRoute_Settings.orangeOnlySkillups = false
 end
+if CraftRoute_Settings.orangeYellowOnlySkillups == nil then
+	CraftRoute_Settings.orangeYellowOnlySkillups = false
+end
+-- Defensive normalization: the two strict modes are meant to be mutually
+-- exclusive (enforced by the checkbox click handlers in tab.lua), but if a
+-- SavedVariables file ever ends up with both true (manual edit, old file
+-- carried over, etc.), orange-only wins since it's the stricter of the two.
+if CraftRoute_Settings.orangeOnlySkillups and CraftRoute_Settings.orangeYellowOnlySkillups then
+	CraftRoute_Settings.orangeYellowOnlySkillups = false
+end
 
 --------------------------------------------------------------------------
 -- Guild restriction
@@ -243,6 +253,11 @@ local function is_relevant_for_start(recipe, startSkill)
 		-- leveling reagents are irrelevant for this route. Recursive
 		-- make-vs-buy dependencies are still expanded below as usual.
 		return recipe.yellow > startSkill
+	end
+	if CraftRoute_Settings and CraftRoute_Settings.orangeYellowOnlySkillups then
+		-- Same idea, one band wider: a recipe already green at the starting
+		-- skill can never be orange or yellow again later.
+		return recipe.green > startSkill
 	end
 	return recipe.grey > startSkill
 end
@@ -919,6 +934,13 @@ function CraftRoute.CalculatePath(professionKey, targetSkill, startSkill)
 				if CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups
 					and skill >= r.yellow then
 					chance = 0
+				-- Wider strict mode: orange OR yellow, i.e. skip a recipe once it
+				-- reaches its own green (the half-open interval [orange, green)).
+				-- Yellow's real, decaying chance is used as-is -- nothing here
+				-- forces it to look like a guarantee.
+				elseif CraftRoute_Settings and CraftRoute_Settings.orangeYellowOnlySkillups
+					and skill >= r.green then
+					chance = 0
 				end
 				if chance > 0 then
 					local expected_cost = costs[i] / chance
@@ -1081,11 +1103,12 @@ function CraftRoute.CalculatePath(professionKey, targetSkill, startSkill)
 	--    the trimmed step was also supplying something later) -- that's
 	--    exactly what sends this back through passes 1/1b/2 again.
 	if not stuckAt and getn(steps) > 1
-		and not (CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups) then
+		and not (CraftRoute_Settings and (CraftRoute_Settings.orangeOnlySkillups or CraftRoute_Settings.orangeYellowOnlySkillups)) then
 		-- The extension cascade intentionally stretches crafts into yellow,
 		-- green and even grey when doing so helps downstream production.
 		-- That is useful in normal cost-optimized mode, but it would violate
-		-- the promise of strict orange-only leveling, so skip it there.
+		-- the promise of either strict mode (orange-only, or orange/yellow-
+		-- only), so skip it for both.
 		steps, total_cost = run_extension_cascade(professionKey, steps, total_cost, targetSkill, recipeLookup, costCache)
 	end
 
@@ -1145,7 +1168,7 @@ function CraftRoute.CalculatePath(professionKey, targetSkill, startSkill)
 		end
 
 		if anyMandatoryChange and getn(steps) > 1
-			and not (CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups) then
+			and not (CraftRoute_Settings and (CraftRoute_Settings.orangeOnlySkillups or CraftRoute_Settings.orangeYellowOnlySkillups)) then
 			steps, total_cost = run_extension_cascade(professionKey, steps, total_cost, targetSkill, recipeLookup, costCache)
 
 			local restoredSteps, restoredMandatory = CraftRoute.ApplyMandatoryCrafts(
@@ -2116,9 +2139,10 @@ local CUSTOM_INSERTIONS = {
 -- Returns: newSteps, anyInserted (bool)
 function CraftRoute.ApplyCustomInsertions(professionKey, steps, startSkill, targetSkill, recipeLookup, cache)
 	-- These are optional stockpiling/personal-use crafts, not profession
-	-- requirements. Some intentionally start in yellow, so suppress them in
-	-- strict orange-only mode rather than letting them consume leveling slots.
-	if CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups then
+	-- requirements. Some intentionally start in yellow (or later), so
+	-- suppress them in either strict mode rather than letting them consume
+	-- leveling slots or land on a band that mode is meant to avoid.
+	if CraftRoute_Settings and (CraftRoute_Settings.orangeOnlySkillups or CraftRoute_Settings.orangeYellowOnlySkillups) then
 		return steps, false
 	end
 	local items = CUSTOM_INSERTIONS[professionKey]

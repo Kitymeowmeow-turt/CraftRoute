@@ -132,7 +132,7 @@ local function build_panel()
 
 	local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	title:SetPoint("TOP", panel, "TOP", 0, -60)
-	title:SetText("CraftRoute -- v2.12.3 -- Scan Reagents")
+	title:SetText("CraftRoute -- v2.13.0 -- Scan Reagents")
 
 	local subtitle = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 	subtitle:SetPoint("TOP", title, "BOTTOM", 0, -8)
@@ -150,7 +150,12 @@ local function build_panel()
 	-- between them. Used below to position the sellback checkbox correctly
 	-- relative to this now-wider column.
 	local rightColumnWidth = createButtonWidth + gap + boxWidth + gap + boxWidth
-	local startY = -126
+	-- Raised one row (buttonHeight + spacing) from the original -126 to make
+	-- room for the new orange/yellow-only checkbox above the orange-only one
+	-- below the list -- belowListY (and everything anchored off it) shifts
+	-- up by the same amount, so the profession list and the checkbox block
+	-- move together and nothing overlaps.
+	local startY = -126 + (buttonHeight + spacing)
 	for i = 1, getn(list) do
 		local key = list[i]
 		local rowY = startY - (i - 1) * (buttonHeight + spacing)
@@ -212,19 +217,54 @@ local function build_panel()
 	local belowListY = startY - getn(list) * (buttonHeight + spacing) - 20
 	local leftEdgeX = -(rightColumnWidth + gap) / 2  -- same anchor the profession buttons use
 
-	local orangeOnlyCheck = CreateFrame("CheckButton", "CraftRouteOrangeOnlyCheck", panel, "UICheckButtonTemplate")
+	-- Both checkboxes are mutually exclusive (orange/yellow-only is a
+	-- superset of orange-only, so having both checked wouldn't mean
+	-- anything beyond just orange-only) -- forward-declared here so each
+	-- click handler below can reach into the other one to uncheck it. A
+	-- local referenced before its own declaration in this file silently
+	-- resolves as a global instead of the intended upvalue (see DEVNOTES),
+	-- so both are declared before either CheckButton's OnClick is set.
+	local orangeYellowOnlyCheck, orangeOnlyCheck
+
+	orangeYellowOnlyCheck = CreateFrame("CheckButton", "CraftRouteOrangeYellowOnlyCheck", panel, "UICheckButtonTemplate")
+	orangeYellowOnlyCheck:SetWidth(20)
+	orangeYellowOnlyCheck:SetHeight(20)
+	orangeYellowOnlyCheck:SetPoint("TOPLEFT", panel, "TOP", leftEdgeX - 65, belowListY)
+	orangeYellowOnlyCheck:SetChecked(CraftRoute_Settings and CraftRoute_Settings.orangeYellowOnlySkillups)
+
+	local orangeYellowOnlyLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+	orangeYellowOnlyLabel:SetJustifyH("LEFT")
+	orangeYellowOnlyLabel:SetPoint("LEFT", orangeYellowOnlyCheck, "RIGHT", 4, 0)
+	orangeYellowOnlyLabel:SetText("Orange/Yellow leveling recipes only (no green crafts)")
+
+	orangeOnlyCheck = CreateFrame("CheckButton", "CraftRouteOrangeOnlyCheck", panel, "UICheckButtonTemplate")
 	orangeOnlyCheck:SetWidth(20)
 	orangeOnlyCheck:SetHeight(20)
-	orangeOnlyCheck:SetPoint("TOPLEFT", panel, "TOP", leftEdgeX - 65, belowListY)
+	orangeOnlyCheck:SetPoint("TOPLEFT", orangeYellowOnlyCheck, "BOTTOMLEFT", 0, -2)
 	orangeOnlyCheck:SetChecked(CraftRoute_Settings and CraftRoute_Settings.orangeOnlySkillups)
-	orangeOnlyCheck:SetScript("OnClick", function()
-		CraftRoute_Settings.orangeOnlySkillups = (orangeOnlyCheck:GetChecked() and true) or false
-	end)
 
 	local orangeOnlyLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 	orangeOnlyLabel:SetJustifyH("LEFT")
 	orangeOnlyLabel:SetPoint("LEFT", orangeOnlyCheck, "RIGHT", 4, 0)
 	orangeOnlyLabel:SetText("Orange leveling recipes only (guaranteed skill-ups)")
+
+	orangeYellowOnlyCheck:SetScript("OnClick", function()
+		local checked = (orangeYellowOnlyCheck:GetChecked() and true) or false
+		CraftRoute_Settings.orangeYellowOnlySkillups = checked
+		if checked then
+			CraftRoute_Settings.orangeOnlySkillups = false
+			orangeOnlyCheck:SetChecked(false)
+		end
+	end)
+
+	orangeOnlyCheck:SetScript("OnClick", function()
+		local checked = (orangeOnlyCheck:GetChecked() and true) or false
+		CraftRoute_Settings.orangeOnlySkillups = checked
+		if checked then
+			CraftRoute_Settings.orangeYellowOnlySkillups = false
+			orangeYellowOnlyCheck:SetChecked(false)
+		end
+	end)
 
 	local sellbackCheck = CreateFrame("CheckButton", "CraftRouteSellbackCheck", panel, "UICheckButtonTemplate")
 	sellbackCheck:SetWidth(20)
