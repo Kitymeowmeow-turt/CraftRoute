@@ -2165,6 +2165,118 @@ local CUSTOM_INSERTIONS = {
 	},
 }
 
+-- Guarantees `depRecipe` has a real, visible, unconditional route step
+-- covering at least `neededQty` crafts -- used by ApplyCustomInsertions so
+-- a forced item's own reagent, when the cost system already decided
+-- crafting it beats buying it, gets guaranteed order/visibility instead
+-- of being left to a cost-tie coin flip against the forced item's own
+-- unconditional insertion. This does NOT decide craft-vs-buy itself
+-- (that's still get_item_cost_detailed's call, made by the caller before
+-- this is invoked) -- it only makes sure a decision that was already
+-- "craft" turns into an ordered, visible step. Real bug this fixes:
+-- Engineering's Solid Dynamite (forced via CUSTOM_INSERTIONS) needs Solid
+-- Blasting Powder as a direct reagent; both recipes share identical
+-- thresholds, so nothing previously guaranteed Blasting Powder would
+-- appear as its own step before Dynamite rather than an unordered/
+-- invisible make-vs-buy expansion. See DEVNOTES.
+-- Deliberately no upper bound tied to the dependent's own requested skill
+-- -- the dependency is free to land LATER than that (the caller then
+-- pushes the dependent's own start forward to match, since it genuinely
+-- can't begin before its ingredient exists), matching how the top-level
+-- entry insertion below also has no targetSkill cap on its own landing.
+-- Deliberately scoped to CUSTOM_INSERTIONS only, not MANDATORY_CRAFTS --
+-- no mandatory item currently depends on another forced item, and
+-- MANDATORY_CRAFTS uses a different single-unit-at-orange splice
+-- mechanism (build_splice_candidate) that doesn't carry a qty/atSkill to
+-- size this against. Also deliberately one level deep (a dependency's own
+-- sub-dependencies aren't chased further) -- no real recipe in the
+-- current data needs that, and chasing it recursively would start
+-- reimplementing the general cascade rather than fixing this specific
+-- ordering gap.
+-- Returns: newSteps (or nil if nothing changed/possible), landSkill (the
+-- skill point production actually lands at, or nil).
+local function ensure_forced_dependency(currentSteps, recipes, recipeLookup, cache, depRecipe, neededQty, startSkill, targetSkill)
+	local depKey = strlower(depRecipe.name)
+
+	-- Already a real step for this? Don't just wait for the WHOLE step to
+	-- finish -- it may have been extended well past what THIS dependent
+	-- needs, to cover unrelated downstream demand (e.g. Solid Blasting
+	-- Powder is a reagent for nine other Engineering recipes besides
+	-- Solid Dynamite, and the normal cascade legitimately extends it all
+	-- the way to its own grey to cover that). Waiting for the full step
+	-- can push the dependent to (or past) ITS OWN grey too when the two
+	-- share overlapping/identical thresholds -- a real bug found via user
+	-- report: it produced a step claiming a skill gain (e.g. "[195-196]")
+	-- from a recipe that's already fully grey at 195, which cannot
+	-- happen. Instead, simulate forward from the step's own start for
+	-- just `neededQty` units -- the real point by which THIS dependent's
+	-- share is actually available -- capped at the step's real toSkill
+	-- (can't need more than the step actually produces).
+	for i = 1, getn(currentSteps) do
+		local existing = currentSteps[i]
+		if strlower(existing.name) == depKey then
+			local partialLanding = simulate_forward_landing(depRecipe, existing.fromSkill, neededQty)
+			if partialLanding > existing.toSkill then
+				partialLanding = existing.toSkill
+			end
+			return nil, partialLanding
+		end
+	end
+
+	local insertSkill = math.max(depRecipe.orange, startSkill)
+	if insertSkill >= targetSkill then
+		return nil, nil -- no room at all -- fall back to today's behavior rather than guess
+	end
+
+	local depRecipeIdx = nil
+	for i = 1, getn(recipes) do
+		if recipes[i] == depRecipe then
+			depRecipeIdx = i
+			break
+		end
+	end
+	if not depRecipeIdx then
+		return nil, nil
+	end
+
+	local reagentCost = recipe_cost(depRecipe, recipeLookup, cache)
+	if not reagentCost then
+		return nil, nil
+	end
+
+	local landing = simulate_forward_landing(depRecipe, insertSkill, neededQty)
+	if landing <= insertSkill then
+		landing = insertSkill + 1
+	end
+
+	local newLearnCost, newLearnConfidence = 0, "estimated"
+	if not depRecipe.questObtained and not depRecipe.bossObtained then
+		local lc, conf = CraftRoute.GetRecipeLearnCost(depRecipe)
+		newLearnCost, newLearnConfidence = lc or 0, conf
+	end
+	local newStep = {
+		recipeIndex = depRecipeIdx,
+		name = depRecipe.name,
+		fromSkill = insertSkill,
+		toSkill = landing,
+		expectedCrafts = neededQty,
+		unitCost = reagentCost,
+		subtotal = reagentCost * neededQty + newLearnCost,
+		learnCost = newLearnCost,
+		learnCostConfidence = newLearnConfidence,
+		scrollName = depRecipe.scrollName,
+		questObtained = depRecipe.questObtained,
+		bossObtained = depRecipe.bossObtained,
+	}
+
+	local candidateSteps, newStepPlaced = rebuild_with_insertion(
+		currentSteps, recipes, recipeLookup, cache, newStep)
+	if newStepPlaced then
+		return candidateSteps, landing
+	end
+	return nil, nil
+end
+
 -- Returns: newSteps, anyInserted (bool)
 function CraftRoute.ApplyCustomInsertions(professionKey, steps, startSkill, targetSkill, recipeLookup, cache)
 	-- These are optional stockpiling/personal-use crafts, not profession
@@ -2208,11 +2320,49 @@ function CraftRoute.ApplyCustomInsertions(professionKey, steps, startSkill, targ
 			end
 
 			if recipe and recipeIdx then
+				-- Before forcing this item in, check its own direct
+				-- reagents: for any that the cost system already decided
+				-- are cheaper to craft than buy (get_item_cost_detailed
+				-- returning "craft", the exact same decision recipe_cost
+				-- below relies on), guarantee that dependency lands as a
+				-- real, ordered step before this one -- otherwise this
+				-- item's own unconditional insertion can land before (or
+				-- overwrite) the very thing it needs. This does not
+				-- second-guess the craft-vs-buy decision itself, only
+				-- makes its consequence ordered and visible. See
+				-- ensure_forced_dependency's own comment and DEVNOTES for
+				-- the real bug this fixes (Solid Dynamite / Solid Blasting
+				-- Powder).
+				local effectiveAtSkill = entry.atSkill
+				for ri = 1, getn(recipe.reagents) do
+					local rgt = recipe.reagents[ri]
+					local rName, rItemId = CraftRoute.ResolveReagent(rgt)
+					if rName then
+						local subRecipe = recipeLookup[strlower(rName)]
+						if subRecipe and not subRecipe.excluded and not subRecipe.excludeFromMakeVsBuy then
+							local _, source = get_item_cost_detailed(rName, rItemId, recipeLookup, cache, {})
+							if source == "craft" then
+								local neededQty = rgt.qty * entry.qty
+								local depSteps, depLanding = ensure_forced_dependency(
+									currentSteps, recipes, recipeLookup, cache,
+									subRecipe, neededQty, startSkill, targetSkill)
+								if depSteps then
+									currentSteps = depSteps
+									anyInserted = true
+								end
+								if depLanding and depLanding > effectiveAtSkill then
+									effectiveAtSkill = depLanding
+								end
+							end
+						end
+					end
+				end
+
 				local reagentCost = recipe_cost(recipe, recipeLookup, cache)
 				if reagentCost then
-					local landing = simulate_forward_landing(recipe, entry.atSkill, entry.qty)
-					if landing <= entry.atSkill then
-						landing = entry.atSkill + 1
+					local landing = simulate_forward_landing(recipe, effectiveAtSkill, entry.qty)
+					if landing <= effectiveAtSkill then
+						landing = effectiveAtSkill + 1
 					end
 
 					local newLearnCost, newLearnConfidence = 0, "estimated"
@@ -2223,7 +2373,7 @@ function CraftRoute.ApplyCustomInsertions(professionKey, steps, startSkill, targ
 					local newStep = {
 						recipeIndex = recipeIdx,
 						name = recipe.name,
-						fromSkill = entry.atSkill,
+						fromSkill = effectiveAtSkill,
 						toSkill = landing,
 						expectedCrafts = entry.qty,
 						unitCost = reagentCost,

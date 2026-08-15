@@ -1,4 +1,4 @@
-# CraftRoute v2.13.1
+# CraftRoute v2.14.0
 Addon for OctoWow
 
 CraftRoute is a OctoWow addon that calculates the cheapest possible route to level any of the game's 9 crafting professions (Alchemy, Blacksmithing, Cooking, Enchanting, Engineering, Jewelcrafting, Leatherworking, Survival, Tailoring) from any level to any other level, using real, live Auction House prices rather than guesses.
@@ -130,6 +130,26 @@ Total cost after vendoring: 16g 45s 28c
 ...
 ```
 ## Version History
+
+
+v2.14.0
+-------
+Feature: forced/custom-inserted items (CUSTOM_INSERTIONS) now guarantee
+correct crafting order against their own reagents. Fixes Engineering's
+Solid Dynamite (forced in at skill 175) giving no indication that Solid
+Blasting Powder -- its own direct reagent -- needed to be crafted first,
+since both recipes share identical thresholds and nothing previously
+ordered them relative to each other. When the cost system already
+decided a forced item's reagent is cheaper to craft than buy, that
+reagent now gets a guaranteed, real, ordered route step before the
+forced item itself -- and the forced item's own start point shifts
+forward to match wherever that dependency's production actually
+finishes, so this adapts correctly no matter what starting skill is
+requested (a hardcoded insertion point can't do that: a player starting
+above a hardcoded dependency's slot but at/below the dependent's would
+lose the guarantee again). Scoped to CUSTOM_INSERTIONS and one reagent
+level deep -- see DEVNOTES for the full reasoning and what's
+deliberately not covered.
 
 
 v2.13.1
